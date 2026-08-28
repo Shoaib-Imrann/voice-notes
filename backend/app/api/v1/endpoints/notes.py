@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import shutil
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
 from sqlalchemy.orm import Session
@@ -12,6 +13,7 @@ from app.core.config import settings
 from app.services.tasks import process_audio_note_task
 from app.services.supabase_storage import upload_to_supabase_storage
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 def get_note_by_identifier(db: Session, identifier: str) -> Optional[AudioNote]:
@@ -103,7 +105,7 @@ async def upload_audio_note(
     if ext not in (".mp3", ".wav"):
         try:
             from pydub import AudioSegment
-            mp3_filename = f"{file_id}_{os.path.splitext(clean_filename)[0]}.mp3"
+            mp3_filename = f"{file_id}_{os.path.splitext(file.filename)[0]}.mp3"
             mp3_path = os.path.join(settings.UPLOAD_DIR, mp3_filename)
             format_name = ext.lstrip(".")
             if format_name == "m4a":

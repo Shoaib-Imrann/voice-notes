@@ -64,3 +64,14 @@ def test_upload_and_list_note(client):
 
     get_after_delete = client.get(f"/api/v1/notes/{note_id}")
     assert get_after_delete.status_code == 404
+
+def test_upload_non_mp3_audio(client):
+    fake_audio_content = b"Fake AAC/M4A audio content for testing."
+    files = {"file": ("recording.m4a", io.BytesIO(fake_audio_content), "audio/x-m4a")}
+    data = {"title": "M4A Voice Memo"}
+    
+    upload_res = client.post("/api/v1/notes/upload", files=files, data=data)
+    assert upload_res.status_code == 201
+    note_data = upload_res.json()
+    assert note_data["title"] == "M4A Voice Memo"
+    assert note_data["status"] == "UPLOADED"
