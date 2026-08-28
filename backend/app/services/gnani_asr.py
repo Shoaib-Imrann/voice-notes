@@ -17,18 +17,14 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
       - Form Field: audio_file
       - Form Field: language_code (en-IN)
     """
-    api_key = settings.GNANI_API_KEY
-    filename = os.path.basename(chunk_file_path)
-    ext = os.path.splitext(filename)[1].lower()
-
-    mime_type = "audio/wav"
-    if ext == ".mp3":
-        mime_type = "audio/mpeg"
-    elif ext in (".m4a", ".mp4"):
-        mime_type = "audio/mp4"
+    api_key = settings.GNANI_API_KEY or os.getenv("GNANI_API_KEY")
+    if not api_key:
+        raise ValueError("Gnani STT API Key (GNANI_API_KEY) is missing in Render environment variables.")
 
     headers = {
-        "X-API-Key-ID": api_key,
+        "X-API-Key-ID": api_key.strip(),
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "*/*"
     }
 
     with open(chunk_file_path, "rb") as audio_file:
