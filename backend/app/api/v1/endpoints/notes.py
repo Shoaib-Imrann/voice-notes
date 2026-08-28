@@ -2,11 +2,8 @@ import os
 import json
 import uuid
 import shutil
-import logging
 from typing import List, Optional
-
-logger = logging.getLogger(__name__)
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.note import AudioNote, generate_slug
@@ -14,7 +11,6 @@ from app.schemas.note import AudioNoteResponse, AudioNoteStatusResponse
 from app.core.config import settings
 from app.services.tasks import process_audio_note_task
 from app.services.supabase_storage import upload_to_supabase_storage
-from app.core.rate_limiter import limiter
 
 router = APIRouter()
 
@@ -49,9 +45,7 @@ def format_note_response(note: AudioNote) -> AudioNoteResponse:
     )
 
 @router.post("/notes/upload", response_model=AudioNoteResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
 async def upload_audio_note(
-    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
@@ -104,28 +98,7 @@ async def upload_audio_note(
             detail=f"File exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB."
         )
 
-    # 3. Convert non-MP3/WAV audio to MP3 for universal web player playback (Safari/iOS/Chrome)
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext not in (".mp3", ".wav"):
-        try:
-            from pydub import AudioSegment
-            mp3_filename = f"{file_id}_{os.path.splitext(file.filename)[0]}.mp3"
-            mp3_path = os.path.join(settings.UPLOAD_DIR, mp3_filename)
-            format_name = ext.lstrip(".")
-            if format_name == "m4a":
-                format_name = "mp4"
-            audio_segment = AudioSegment.from_file(file_path, format=format_name if format_name else None)
-            audio_segment.export(mp3_path, format="mp3", bitrate="128k")
-            
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            file_path = mp3_path
-            safe_filename = mp3_filename
-            file_size = os.path.getsize(file_path)
-        except Exception as conv_err:
-            logger.warning(f"Could not convert {ext} to mp3: {conv_err}. Keeping original file.")
-
-    # 4. Create Note Record in DB
+    # 3. Create Note Record in DB
     note_title = title.strip() if title and title.strip() else os.path.splitext(file.filename)[0]
     note_title = note_title[:40]
     note_slug = generate_slug(note_title, file_id)
@@ -154,9 +127,7 @@ async def upload_audio_note(
     return format_note_response(new_note)
 
 @router.post("/notes/{note_id}/retry", response_model=AudioNoteResponse)
-@limiter.limit("10/minute")
 async def retry_audio_note(
-    request: Request,
     note_id: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
@@ -178,22 +149,19 @@ async def retry_audio_note(
     return format_note_response(note)
 
 @router.get("/notes", response_model=List[AudioNoteResponse])
-@limiter.limit("60/minute")
-def list_audio_notes(request: Request, db: Session = Depends(get_db)):
+def list_audio_notes(db: Session = Depends(get_db)):
     notes = db.query(AudioNote).order_by(AudioNote.created_at.desc()).all()
     return [format_note_response(n) for n in notes]
 
 @router.get("/notes/{note_id}", response_model=AudioNoteResponse)
-@limiter.limit("60/minute")
-def get_audio_note(request: Request, note_id: str, db: Session = Depends(get_db)):
+def get_audio_note(note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")
     return format_note_response(note)
 
 @router.get("/notes/{note_id}/status", response_model=AudioNoteStatusResponse)
-@limiter.limit("60/minute")
-def get_audio_note_status(request: Request, note_id: str, db: Session = Depends(get_db)):
+def get_audio_note_status(note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")
@@ -207,8 +175,7 @@ def get_audio_note_status(request: Request, note_id: str, db: Session = Depends(
     )
 
 @router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("30/minute")
-def delete_audio_note(request: Request, note_id: str, db: Session = Depends(get_db)):
+def delete_audio_note(note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")
