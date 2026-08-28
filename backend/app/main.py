@@ -9,6 +9,9 @@ from app.db.session import engine, Base
 # Import models to ensure they register with Base.metadata
 from app.models import note
 
+from slowapi.errors import RateLimitExceeded
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
+
 # Auto-create database tables (Alembic can manage migrations for production)
 Base.metadata.create_all(bind=engine)
 
@@ -20,6 +23,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # CORS configuration
 origins = [
@@ -35,6 +41,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # Mount static uploads directory for audio playback
 app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")

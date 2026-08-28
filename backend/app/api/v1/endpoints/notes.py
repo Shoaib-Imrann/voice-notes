@@ -6,7 +6,7 @@ import logging
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status, Request
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.note import AudioNote, generate_slug
@@ -14,6 +14,7 @@ from app.schemas.note import AudioNoteResponse, AudioNoteStatusResponse
 from app.core.config import settings
 from app.services.tasks import process_audio_note_task
 from app.services.supabase_storage import upload_to_supabase_storage
+from app.core.rate_limiter import limiter
 
 router = APIRouter()
 
@@ -48,7 +49,9 @@ def format_note_response(note: AudioNote) -> AudioNoteResponse:
     )
 
 @router.post("/notes/upload", response_model=AudioNoteResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def upload_audio_note(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
@@ -151,7 +154,9 @@ async def upload_audio_note(
     return format_note_response(new_note)
 
 @router.post("/notes/{note_id}/retry", response_model=AudioNoteResponse)
+@limiter.limit("10/minute")
 async def retry_audio_note(
+    request: Request,
     note_id: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
@@ -173,12 +178,14 @@ async def retry_audio_note(
     return format_note_response(note)
 
 @router.get("/notes", response_model=List[AudioNoteResponse])
-def list_audio_notes(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def list_audio_notes(request: Request, db: Session = Depends(get_db)):
     notes = db.query(AudioNote).order_by(AudioNote.created_at.desc()).all()
     return [format_note_response(n) for n in notes]
 
 @router.get("/notes/{note_id}", response_model=AudioNoteResponse)
-def get_audio_note(note_id: str, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_audio_note(request: Request, note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")

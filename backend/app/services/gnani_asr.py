@@ -21,6 +21,15 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
     if not api_key:
         raise ValueError("Gnani STT API Key (GNANI_API_KEY) is missing in Render environment variables.")
 
+    filename = os.path.basename(chunk_file_path)
+    ext = os.path.splitext(filename)[1].lower()
+
+    mime_type = "audio/wav"
+    if ext == ".mp3":
+        mime_type = "audio/mpeg"
+    elif ext in (".m4a", ".mp4"):
+        mime_type = "audio/mp4"
+
     headers = {
         "X-API-Key-ID": api_key.strip(),
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -61,13 +70,20 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
 
         if response.status_code == 200:
             res_json = response.json()
+            logger.info(f"Gnani STT raw response for {filename}: {res_json}")
             transcript = (
                 res_json.get("transcript") or 
                 res_json.get("text") or 
                 res_json.get("result") or 
                 res_json.get("output", "")
             )
-            return str(transcript).strip() if transcript else ""
+            if isinstance(transcript, dict):
+                transcript = transcript.get("text") or transcript.get("transcript") or str(transcript)
+            elif isinstance(transcript, list):
+                transcript = " ".join([str(item.get("text", item)) if isinstance(item, dict) else str(item) for item in transcript])
+            
+            clean_text = str(transcript).strip() if transcript else ""
+            return clean_text
             
         if response.status_code == 429 and attempt < max_retries:
             logger.warning(f"Gnani STT API Rate Limited (429). Pausing {attempt * 2}s before retry {attempt}/{max_retries}...")
