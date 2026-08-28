@@ -14,8 +14,21 @@ export default function SummaryViewer({ summary }: Props) {
 
   if (!summary) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-neutral-400 h-full">
-        <p className="text-xs font-medium">Summary will appear here once processing completes.</p>
+      <div className="flex flex-col h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-24 rounded-md bg-neutral-100" />
+          <div className="h-7 w-7 rounded-lg bg-neutral-100" />
+        </div>
+        <div className="space-y-2.5 pt-2">
+          <div className="h-3.5 w-full rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[90%] rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[75%] rounded-md bg-neutral-100" />
+        </div>
+        <div className="space-y-2 pt-2">
+          <div className="h-4 w-28 rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[85%] rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[60%] rounded-md bg-neutral-100" />
+        </div>
       </div>
     );
   }

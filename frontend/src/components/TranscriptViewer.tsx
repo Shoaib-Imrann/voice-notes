@@ -124,8 +124,19 @@ export default function TranscriptViewer({ transcript }: Props) {
 
   if (!transcript) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-neutral-400 h-full">
-        <p className="text-xs font-medium">Transcript will appear here once ASR completes.</p>
+      <div className="flex flex-col h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-24 rounded-md bg-neutral-100" />
+          <div className="h-7 w-7 rounded-lg bg-neutral-100" />
+        </div>
+        <div className="h-8 w-full rounded-xl bg-neutral-100" />
+        <div className="space-y-2.5 pt-2">
+          <div className="h-3.5 w-full rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[95%] rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[88%] rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[92%] rounded-md bg-neutral-100" />
+          <div className="h-3.5 w-[70%] rounded-md bg-neutral-100" />
+        </div>
       </div>
     );
   }

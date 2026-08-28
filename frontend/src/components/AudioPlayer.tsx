@@ -127,7 +127,7 @@ export default function AudioPlayer({
   }, [audioUrl]);
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-3">
       <audio
         ref={audioRef}
         src={audioUrl}
@@ -140,50 +140,80 @@ export default function AudioPlayer({
         <track kind="captions" />
       </audio>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Playback Controls & Info */}
-        <div className="flex items-center gap-3 min-w-0">
+      {/* 1. Dedicated Separate Line for Title & Metadata */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <h2 className="text-sm sm:text-base font-bold text-neutral-900 leading-snug break-words">
+            {title}
+          </h2>
+          <p className="text-[11px] font-sans text-neutral-500">
+            {formatTime(duration)}
+            {formattedDate && ` • ${formattedDate}`}
+            {formattedSize && ` • ${formattedSize}`}
+          </p>
+        </div>
+
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer shrink-0"
+            title="Delete Note"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* 2. Progress Slider Bar */}
+      <div className="space-y-1 pt-0.5">
+        <div className="relative">
+          <input
+            type="range"
+            min="0"
+            max={duration || 100}
+            value={currentTime}
+            onChange={handleSeek}
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-100 accent-neutral-900"
+          />
+        </div>
+        <div className="flex justify-between text-[11px] font-sans tabular-nums text-neutral-400">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* 3. Playback Controls & Actions */}
+      <div className="flex items-center justify-between pt-0.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={togglePlay}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-sm transition hover:bg-neutral-800 cursor-pointer"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-sm transition hover:bg-neutral-800 cursor-pointer"
           >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
           </button>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => skipSeconds(-10)}
-              className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
-              title="Rewind 10s"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => skipSeconds(10)}
-              className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
-              title="Forward 10s"
-            >
-              <RotateCw className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-neutral-900 truncate max-w-[200px] sm:max-w-xs">
-              {title}
-            </p>
-            <p className="text-[11px] font-sans text-neutral-500 truncate">
-              {formatTime(currentTime)} / {formatTime(duration)}
-              {formattedDate && ` • ${formattedDate}`}
-              {formattedSize && ` • ${formattedSize}`}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => skipSeconds(-10)}
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title="Rewind 10s"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => skipSeconds(10)}
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title="Forward 10s"
+          >
+            <RotateCw className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Speed, Volume, & Delete Controls */}
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+        {/* Speed & Volume Controls */}
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={cyclePlaybackRate}
@@ -200,30 +230,7 @@ export default function AudioPlayer({
           >
             {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
-
-          {onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer ml-1"
-              title="Delete Note"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
         </div>
-      </div>
-
-      {/* Modern Progress Bar */}
-      <div className="mt-3 relative">
-        <input
-          type="range"
-          min="0"
-          max={duration || 100}
-          value={currentTime}
-          onChange={handleSeek}
-          className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-100 accent-neutral-900"
-        />
       </div>
     </div>
   );

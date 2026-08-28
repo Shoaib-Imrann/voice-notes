@@ -1,7 +1,7 @@
 "use client";
 
 import type { AudioNote } from "@/types/note";
-import { Cpu, ExternalLink, FileAudio, Github, PanelLeftClose, Plus, Trash2 } from "lucide-react";
+import { Cpu, FileAudio, Github, PanelLeftClose, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo } from "react";
 
@@ -10,7 +10,7 @@ interface Props {
   selectedNoteId?: string;
   onSelectNote: (note: AudioNote) => void;
   onNewNote: () => void;
-  onDeleteNote: (noteId: string) => void;
+  onDeleteNote: (noteId: string, noteTitle?: string) => void;
   isLoading: boolean;
   onRefresh: () => void;
   onToggleSidebar?: () => void;
@@ -22,6 +22,7 @@ export default function NotesHistory({
   onSelectNote,
   onNewNote,
   onDeleteNote,
+  isLoading = false,
   onToggleSidebar,
 }: Props) {
   // Group notes by relative time (Today, Yesterday, Previous 7 Days, Older)
@@ -63,10 +64,12 @@ export default function NotesHistory({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#171717] text-neutral-200 select-none">
+    <div className="flex flex-col h-full overflow-hidden bg-[#171717] text-neutral-200 select-none">
       {/* Clean Single-Word Header */}
       <div className="p-3 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
-        <span className="font-semibold text-sm text-neutral-200 tracking-tight pl-1">Notes</span>
+        <span className="font-semibold text-sm text-neutral-200 tracking-tight pl-1">
+          Voice Notes
+        </span>
 
         {onToggleSidebar && (
           <button
@@ -93,8 +96,15 @@ export default function NotesHistory({
       </div>
 
       {/* Notes List Grouped by Date */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
-        {notes.length === 0 ? (
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-3 space-y-4">
+        {isLoading ? (
+          <div className="space-y-2 px-1 animate-pulse">
+            <div className="h-3 w-16 bg-neutral-800 rounded-md mb-2.5" />
+            <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
+            <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
+            <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
+          </div>
+        ) : notes.length === 0 ? (
           <div className="py-8 text-center text-xs text-neutral-500">No recordings yet.</div>
         ) : (
           Object.entries(groupedNotes).map(([groupTitle, groupNotes]) => {
@@ -149,7 +159,7 @@ export default function NotesHistory({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDeleteNote(note.id);
+                          onDeleteNote(note.id, note.title);
                         }}
                         className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-neutral-400 hover:text-red-400 hover:bg-neutral-700/50 transition shrink-0"
                         title="Delete Note"
@@ -166,25 +176,22 @@ export default function NotesHistory({
       </div>
 
       {/* Footer System Navigation Links */}
-      <div className="p-3 border-t border-neutral-800/80 space-y-1.5 text-xs shrink-0">
+      <div className="p-2.5 border-t border-neutral-800/80 grid grid-cols-2 gap-1.5 text-xs shrink-0">
         <Link
           href="/architecture"
-          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 px-2 py-2 text-neutral-300 hover:text-white transition text-center"
         >
-          <Cpu className="h-4 w-4 text-neutral-500" />
-          <span>System Architecture</span>
+          <Cpu className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+          <span className="truncate text-[11px] font-medium">Architecture</span>
         </Link>
         <a
           href="https://github.com/Shoaib-Imrann/voice-notes"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 px-2 py-2 text-neutral-300 hover:text-white transition text-center"
         >
-          <div className="flex items-center gap-2">
-            <Github className="h-4 w-4 text-neutral-500" />
-            <span>GitHub Repository</span>
-          </div>
-          <ExternalLink className="h-3.5 w-3.5 text-neutral-600" />
+          <Github className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+          <span className="truncate text-[11px] font-medium">Repository</span>
         </a>
       </div>
     </div>

@@ -2,16 +2,7 @@
 
 import { apiClient } from "@/lib/axios";
 import type { AudioNote } from "@/types/note";
-import {
-  AlertTriangle,
-  FileAudio,
-  Loader2,
-  Mic,
-  Sparkles,
-  UploadCloud,
-  X,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, Bot, FileAudio, Loader2, Mic, UploadCloud, X, Zap } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -113,8 +104,8 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 pt-0 pb-12">
-      <div className="w-full max-w-xl text-center space-y-6">
+    <div className="flex flex-col items-center justify-center h-full w-full px-4 py-3 sm:py-6 overflow-hidden">
+      <div className="w-full max-w-xl text-center space-y-4 sm:space-y-6 my-auto">
         {/* Minimal Hero Header */}
         <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
           Audio Transcribe & Summarize
@@ -150,7 +141,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             }}
             role="button"
             tabIndex={0}
-            className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-white p-10 text-center transition hover:border-neutral-400 hover:bg-neutral-50/50 cursor-pointer shadow-xs"
+            className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-white p-6 sm:p-10 text-center transition hover:border-neutral-400 hover:bg-neutral-50/50 cursor-pointer shadow-xs"
           >
             <input
               ref={fileInputRef}
@@ -253,15 +244,15 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
             <Mic className="h-3.5 w-3.5 text-neutral-500" />
-            Gnani Speech ASR
+            Gnani Speech-to-Text
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-            Gemini 3.6 Flash
+            <Bot className="h-3.5 w-3.5 text-neutral-500" />
+            Gemini AI Summary
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
-            <Zap className="h-3.5 w-3.5 text-emerald-500" />
-            Realtime Async Worker
+            <Zap className="h-3.5 w-3.5 text-neutral-500" />
+            Background Processing
           </span>
         </div>
       </div>

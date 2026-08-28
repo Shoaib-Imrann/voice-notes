@@ -10,10 +10,71 @@ import TranscriptViewer from "@/components/TranscriptViewer";
 import { apiClient } from "@/lib/axios";
 import type { AudioNote } from "@/types/note";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PanelLeftOpen, Plus } from "lucide-react";
+import { PanelLeftOpen, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+function NoteWorkspaceSkeleton() {
+  return (
+    <div className="h-full flex flex-col w-full max-w-[1600px] mx-auto px-6 py-4 space-y-4 overflow-hidden animate-pulse">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden items-stretch">
+        {/* Left Column: Audio Player skeleton + Summary skeleton */}
+        <div className="lg:col-span-7 flex flex-col space-y-4 h-full overflow-hidden pr-1">
+          {/* Audio Player Skeleton */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4 space-y-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-neutral-100" />
+                <div className="space-y-1.5">
+                  <div className="h-4 w-40 rounded-md bg-neutral-100" />
+                  <div className="h-3 w-24 rounded-md bg-neutral-100" />
+                </div>
+              </div>
+              <div className="h-8 w-8 rounded-lg bg-neutral-100" />
+            </div>
+            <div className="h-2 w-full rounded-full bg-neutral-100" />
+          </div>
+
+          {/* AI Summary Skeleton */}
+          <div className="flex-1 rounded-2xl border border-neutral-200 bg-white p-5 space-y-4 flex flex-col">
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-28 rounded-md bg-neutral-100" />
+              <div className="h-7 w-7 rounded-lg bg-neutral-100" />
+            </div>
+            <div className="space-y-2.5 pt-2">
+              <div className="h-3.5 w-full rounded-md bg-neutral-100" />
+              <div className="h-3.5 w-[92%] rounded-md bg-neutral-100" />
+              <div className="h-3.5 w-[85%] rounded-md bg-neutral-100" />
+            </div>
+            <div className="space-y-2 pt-3">
+              <div className="h-4 w-32 rounded-md bg-neutral-100" />
+              <div className="h-3.5 w-[75%] rounded-md bg-neutral-100" />
+              <div className="h-3.5 w-[80%] rounded-md bg-neutral-100" />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Transcript Skeleton */}
+        <div className="lg:col-span-5 h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-24 rounded-md bg-neutral-100" />
+            <div className="h-7 w-7 rounded-lg bg-neutral-100" />
+          </div>
+          <div className="h-8 w-full rounded-xl bg-neutral-100" />
+          <div className="space-y-2.5 pt-2">
+            <div className="h-3.5 w-full rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[95%] rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[90%] rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[88%] rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[93%] rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[70%] rounded-md bg-neutral-100" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DashboardContent() {
   const queryClient = useQueryClient();
@@ -34,9 +95,12 @@ function DashboardContent() {
     }
   }, [urlSlugOrId]);
 
-  // Handle client mount hydration and localStorage fallback
+  // Handle client mount hydration, localStorage fallback, and mobile initial state
   useEffect(() => {
     setIsMounted(true);
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      setIsSidebarOpen(false);
+    }
     if (!urlSlugOrId && typeof window !== "undefined") {
       const storedSlugOrId =
         localStorage.getItem("lastSelectedNoteSlug") || localStorage.getItem("lastSelectedNoteId");
@@ -47,6 +111,23 @@ function DashboardContent() {
       }
     }
   }, [urlSlugOrId]);
+
+  // Lock background touch and scrolling on mobile when sidebar is open
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (isSidebarOpen && window.innerWidth < 640) {
+        document.body.style.overflow = "hidden";
+        document.body.style.touchAction = "none";
+      } else {
+        document.body.style.overflow = "";
+        document.body.style.touchAction = "";
+      }
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [isSidebarOpen]);
 
   // Query past notes list
   const {
@@ -102,10 +183,9 @@ function DashboardContent() {
     }
   };
 
-  // Handle toast notifications upon status transitions
+  // Toast notifications on processing state transition
   useEffect(() => {
-    if (!selectedNote || !selectedNote.id) return;
-
+    if (!selectedNote) return;
     const noteId = selectedNote.id;
     const currentStatus = selectedNote.status;
 
@@ -128,6 +208,9 @@ function DashboardContent() {
     }
   }, [selectedNote, queryClient]);
 
+  const [noteToDelete, setNoteToDelete] = useState<{ id: string; title?: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleUploadSuccess = (newNote: AudioNote) => {
     updateSelectedNoteId(newNote);
     queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -137,61 +220,75 @@ function DashboardContent() {
     updateSelectedNoteId(undefined);
   };
 
-  const handleDeleteNote = async (noteId: string) => {
+  const promptDeleteNote = (noteId: string, noteTitle?: string) => {
+    setNoteToDelete({ id: noteId, title: noteTitle });
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!noteToDelete) return;
+    setIsDeleting(true);
+    const noteId = noteToDelete.id;
     try {
       await apiClient.delete(`/notes/${noteId}`);
       toast.success("Note deleted");
 
-      queryClient.removeQueries({ queryKey: ["note", noteId] });
-      await queryClient.invalidateQueries({ queryKey: ["notes"] });
-
-      if (selectedNoteId === noteId || (selectedNote && selectedNote.id === noteId)) {
+      if (
+        selectedNote?.id === noteId ||
+        selectedNote?.slug === selectedNoteId ||
+        selectedNoteId === noteId
+      ) {
         updateSelectedNoteId(undefined);
       }
-    } catch {
+
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setNoteToDelete(null);
+    } catch (_err) {
       toast.error("Failed to delete note");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleRetryNote = async (noteId: string) => {
     setIsRetrying(true);
     try {
-      const res = await apiClient.post<AudioNote>(`/notes/${noteId}/retry`);
-      toast.info(
-        res.data.transcript ? "Retrying Gemini AI summarization..." : "Retrying note processing...",
-      );
-      await queryClient.invalidateQueries({ queryKey: ["note", selectedNoteId] });
-      await queryClient.invalidateQueries({ queryKey: ["notes"] });
-    } catch {
-      toast.error("Failed to retry note processing");
+      await apiClient.post(`/notes/${noteId}/retry`);
+      toast.success("Retrying note processing...");
+      queryClient.invalidateQueries({ queryKey: ["note", selectedNoteId] });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Failed to retry note";
+      toast.error(msg);
     } finally {
       setIsRetrying(false);
     }
   };
 
-  const getAudioFullUrl = (url: string) => {
-    if (url.startsWith("http")) return url;
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    return `${base}${url}`;
+  // Audio stream URL resolver
+  const getAudioFullUrl = (urlPath: string) => {
+    if (!urlPath) return "";
+    if (urlPath.startsWith("http")) return urlPath;
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+    return `${base.replace(/\/api\/v1\/?$/, "")}${urlPath}`;
   };
 
-  const activeNote = selectedNoteId ? selectedNote : null;
+  const activeNote = selectedNote;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-neutral-900 font-sans">
-      {/* ChatGPT Style Collapsible Left Sidebar (Fullscreen on Mobile, 280px or 56px Rail on Desktop) */}
+    <div className="flex h-[100dvh] w-full max-w-full overflow-hidden bg-white text-neutral-900 font-sans">
+      {/* Sidebar: Full Desktop / Off-Canvas Mobile Drawer */}
       <aside
-        className={`h-full bg-[#171717] border-r border-neutral-800 transition-all duration-200 ease-in-out shrink-0 overflow-hidden ${
+        className={`h-[100dvh] max-h-[100dvh] border-r border-neutral-800/80 bg-[#171717] transition-all duration-200 z-30 shrink-0 ${
           isSidebarOpen
-            ? "fixed inset-0 z-40 w-full sm:static sm:w-72 opacity-100"
-            : "w-0 sm:w-14 opacity-100"
+            ? "fixed inset-y-0 left-0 w-80 max-w-[85vw] sm:static sm:w-64 sm:max-w-none shadow-2xl sm:shadow-none"
+            : "hidden sm:flex sm:w-14"
         }`}
       >
         {isSidebarOpen ? (
-          <div className="w-full sm:w-72 h-full">
+          <div className="w-80 max-w-[85vw] sm:w-64 sm:max-w-none h-full flex flex-col overflow-hidden">
             <NotesHistory
               notes={notes}
-              selectedNoteId={selectedNoteId}
+              selectedNoteId={selectedNote?.id || selectedNoteId}
               onSelectNote={(note) => {
                 updateSelectedNoteId(note);
                 if (typeof window !== "undefined" && window.innerWidth < 640) {
@@ -204,14 +301,14 @@ function DashboardContent() {
                   setIsSidebarOpen(false);
                 }
               }}
-              onDeleteNote={handleDeleteNote}
+              onDeleteNote={promptDeleteNote}
               isLoading={isLoadingNotes}
               onRefresh={refetchNotes}
               onToggleSidebar={() => setIsSidebarOpen(false)}
             />
           </div>
         ) : (
-          /* ChatGPT-Style Collapsed Mini Rail */
+          /* Collapsed Mini Rail */
           <div className="w-14 h-full flex flex-col items-center py-3 space-y-3 shrink-0 select-none">
             <button
               type="button"
@@ -233,83 +330,159 @@ function DashboardContent() {
         )}
       </aside>
 
-      {/* Main Content Workspace */}
-      <div className="relative flex flex-1 flex-col overflow-hidden min-w-0">
-        <Navbar showNavSwitcher={!activeNote} />
+      {/* Mobile Drawer Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setIsSidebarOpen(false);
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar backdrop"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-20 sm:hidden transition-opacity cursor-pointer touch-none"
+        />
+      )}
 
-        <main className="flex-1 overflow-y-auto bg-white">
+      {/* Main Content Workspace */}
+      <div className="relative flex flex-1 flex-col h-full max-h-[100dvh] overflow-hidden min-w-0">
+        {/* Floating Sidebar Toggle Button on mobile only when active note is displayed and sidebar is closed */}
+        {activeNote && !isSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="sm:hidden absolute top-3.5 left-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 backdrop-blur-xs border border-neutral-200 shadow-xs text-neutral-700 hover:text-neutral-900 transition cursor-pointer"
+            title="Open sidebar"
+            aria-label="Open sidebar"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Minimal Nav Switcher only on empty hero state */}
+        {!activeNote && (
+          <Navbar
+            showNavSwitcher={true}
+            onToggleSidebar={() => setIsSidebarOpen(true)}
+            isSidebarOpen={isSidebarOpen}
+          />
+        )}
+
+        <main className="flex-1 min-h-0 overflow-y-auto bg-white flex flex-col">
           {selectedNoteId && isLoadingSelectedNote ? (
-            /* Quiet Loading state while fetching selected note */
-            <div className="h-full w-full flex items-center justify-center bg-white">
-              <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
-            </div>
+            /* Skeleton Loading state while fetching selected note */
+            <NoteWorkspaceSkeleton />
           ) : !isMounted && !selectedNoteId ? (
-            /* Initial quiet loading state until client mount checks localStorage */
-            <div className="h-full w-full flex items-center justify-center bg-white">
-              <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
-            </div>
+            /* Initial skeleton loading state until client mount */
+            <NoteWorkspaceSkeleton />
           ) : !activeNote ? (
-            /* Centered ChatGPT-style Empty Hero Upload State */
+            /* Empty Hero Upload State */
             <NewNoteHero onUploadSuccess={handleUploadSuccess} />
           ) : (
             /* Active Selected Note View Workspace */
-            <div className="h-full flex flex-col w-full max-w-[1600px] mx-auto px-6 py-4 space-y-4 overflow-hidden">
-              {/* 2-Column Main Workspace Grid (Takes remaining viewport height) */}
-              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden items-stretch">
-                {/* Left Column: Async Loader -> Audio File -> AI Summary */}
-                <div className="lg:col-span-7 flex flex-col space-y-4 h-full overflow-hidden pr-1">
-                  {/* 1. Async Status Loader Badge (Only shown while processing or on error) */}
-                  {activeNote.status !== "COMPLETED" && (
+            <div className="flex-1 overflow-y-auto lg:overflow-hidden px-4 pt-14 pb-6 sm:p-6">
+              <div className="h-full flex flex-col w-full max-w-[1600px] mx-auto space-y-4">
+                {/* 2-Column Main Workspace Grid (Stacks on mobile, 2-column on desktop) */}
+                <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                  {/* Left Column: Async Loader -> Audio File -> AI Summary */}
+                  <div className="lg:col-span-7 flex flex-col space-y-4 lg:h-full lg:overflow-hidden pr-0 lg:pr-1">
+                    {/* 1. Async Status Loader Badge (Only shown while processing or on error) */}
+                    {activeNote.status !== "COMPLETED" && (
+                      <div className="shrink-0">
+                        <ProcessingStatusBadge
+                          status={activeNote.status}
+                          errorMessage={activeNote.error_message}
+                          hasTranscript={!!activeNote.transcript}
+                          onRetry={() => handleRetryNote(activeNote.id)}
+                          isRetrying={isRetrying}
+                        />
+                      </div>
+                    )}
+
+                    {/* 2. Audio File Player */}
                     <div className="shrink-0">
-                      <ProcessingStatusBadge
-                        status={activeNote.status}
-                        errorMessage={activeNote.error_message}
-                        hasTranscript={!!activeNote.transcript}
-                        onRetry={() => handleRetryNote(activeNote.id)}
-                        isRetrying={isRetrying}
+                      <AudioPlayer
+                        audioUrl={getAudioFullUrl(activeNote.file_url)}
+                        title={activeNote.title}
+                        createdAt={activeNote.created_at}
+                        fileSizeBytes={activeNote.file_size_bytes}
+                        onDelete={() => promptDeleteNote(activeNote.id, activeNote.title)}
                       />
                     </div>
-                  )}
 
-                  {/* 2. Audio File Player */}
-                  <div className="shrink-0">
-                    <AudioPlayer
-                      audioUrl={getAudioFullUrl(activeNote.file_url)}
-                      title={activeNote.title}
-                      createdAt={activeNote.created_at}
-                      fileSizeBytes={activeNote.file_size_bytes}
-                      onDelete={() => handleDeleteNote(activeNote.id)}
-                    />
+                    {/* 3. AI Summary - Generous height on mobile, full-height on desktop */}
+                    <div className="min-h-[380px] lg:min-h-0 lg:flex-1 lg:h-full flex flex-col">
+                      <SummaryViewer summary={activeNote.summary} />
+                    </div>
                   </div>
 
-                  {/* 3. AI Summary (Fills remaining height so bottom border aligns with Transcript) */}
-                  <div className="flex-1 min-h-0">
-                    <SummaryViewer summary={activeNote.summary} />
+                  {/* Right Column: Dedicated to Transcript - Increased height on mobile */}
+                  <div className="lg:col-span-5 min-h-[540px] lg:min-h-0 lg:h-full flex flex-col">
+                    <TranscriptViewer transcript={activeNote.transcript} />
                   </div>
-                </div>
-
-                {/* Right Column: Completely Dedicated to Transcript (Fits full height) */}
-                <div className="lg:col-span-5 h-full overflow-hidden">
-                  <TranscriptViewer transcript={activeNote.transcript} />
                 </div>
               </div>
             </div>
           )}
         </main>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {noteToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity select-none"
+          onClick={() => !isDeleting && setNoteToDelete(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !isDeleting) setNoteToDelete(null);
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close delete modal"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xl space-y-4 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-bold text-neutral-900">Delete note?</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-neutral-800 break-words">
+                  “{noteToDelete.title || "this note"}”
+                </span>
+                ? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setNoteToDelete(null)}
+                className="px-3.5 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={confirmDeleteNote}
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="h-screen w-screen flex items-center justify-center bg-white">
-          <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
-        </div>
-      }
-    >
+    <Suspense fallback={<NoteWorkspaceSkeleton />}>
       <DashboardContent />
     </Suspense>
   );
