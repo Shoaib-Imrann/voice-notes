@@ -117,18 +117,17 @@ async def transcribe_audio_gnani(file_path: str) -> str:
 
     # 1. Load Audio & Check Duration
     try:
+        audio = AudioSegment.from_file(file_path)
+    except Exception:
         ext = os.path.splitext(file_path)[1].lower().lstrip(".")
         if ext == "m4a":
             ext = "mp4"
         audio = AudioSegment.from_file(file_path, format=ext if ext else None)
-        duration_seconds = len(audio) / 1000.0
-    except Exception as e:
-        logger.warning(f"Could not calculate audio duration with pydub: {e}. Sending single request...")
-        audio = None
-        duration_seconds = 0.0
+
+    duration_seconds = len(audio) / 1000.0
 
     # 2. Short audio (<= 25 seconds): Send directly
-    if not audio or duration_seconds <= 25.0:
+    if duration_seconds <= 25.0:
         async with httpx.AsyncClient(timeout=120.0) as client:
             return await _transcribe_single_chunk(client, file_path)
 
