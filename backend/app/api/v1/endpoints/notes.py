@@ -192,7 +192,8 @@ def get_audio_note(request: Request, note_id: str, db: Session = Depends(get_db)
     return format_note_response(note)
 
 @router.get("/notes/{note_id}/status", response_model=AudioNoteStatusResponse)
-def get_audio_note_status(note_id: str, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_audio_note_status(request: Request, note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")
@@ -206,7 +207,8 @@ def get_audio_note_status(note_id: str, db: Session = Depends(get_db)):
     )
 
 @router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_audio_note(note_id: str, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def delete_audio_note(request: Request, note_id: str, db: Session = Depends(get_db)):
     note = get_note_by_identifier(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Audio note not found")

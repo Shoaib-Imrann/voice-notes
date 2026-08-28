@@ -32,8 +32,8 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
 
     headers = {
         "X-API-Key-ID": api_key.strip(),
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "*/*"
+        "User-Agent": "GnaniSTTClient/3.0",
+        "Accept": "application/json"
     }
 
     with open(chunk_file_path, "rb") as audio_file:
@@ -91,8 +91,10 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
             continue
 
         logger.error(f"Gnani STT API Error (HTTP {response.status_code}): {response.text}")
-        if response.status_code in (401, 403):
+        if response.status_code == 401:
             raise ValueError("Gnani STT Authentication Failed: Invalid X-API-Key-ID.")
+        if response.status_code == 403:
+            raise ValueError("Gnani STT API Access Forbidden (HTTP 403). Please check your Gnani API key permissions.")
         raise ValueError(f"Gnani STT Error (HTTP {response.status_code}: {response.text})")
 
     raise ValueError("Gnani STT API rate limit exceeded. Please try again.")
