@@ -2,7 +2,10 @@ import os
 import json
 import uuid
 import shutil
+import logging
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
