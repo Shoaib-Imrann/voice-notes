@@ -175,59 +175,25 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
-        {/* 5. Production Scalability & Improvements */}
+        {/* 5. Proposed Future Improvements */}
         <section className="space-y-2.5">
           <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wider border-l-2 border-neutral-900 pl-3">
-            5. Production Scalability & Improvements
+            5. Proposed Future Improvements
           </h2>
           <div className="text-xs text-neutral-600 leading-relaxed font-sans pl-3">
             <ul className="list-disc pl-4 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Redis & Celery Task Queue:</strong> Offload
-                background ASR and LLM tasks to a dedicated Redis/Celery queue for horizonal
-                scaling.
+                <strong className="text-neutral-900">WebSockets / SSE:</strong> Replace HTTP polling
+                with push notifications for sub-second status updates.
               </li>
               <li>
-                <strong className="text-neutral-900">WebSockets / Server-Sent Events:</strong>{" "}
-                Replace 2-second polling with real-time SSE progress updates.
+                <strong className="text-neutral-900">Celery & Redis:</strong> Offload task
+                processing to distributed worker nodes for high-concurrency workloads.
               </li>
               <li>
-                <strong className="text-neutral-900">Vector Embeddings (RAG):</strong> Generate
-                vector embeddings of transcripts for semantic search across past audio notes.
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* 6. Security & Rate Limiting */}
-        <section className="space-y-2.5">
-          <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wider border-l-2 border-neutral-900 pl-3">
-            6. Security & Rate Limiting
-          </h2>
-          <div className="text-xs text-neutral-600 leading-relaxed font-sans pl-3">
-            <ul className="list-disc pl-4 space-y-1.5 text-neutral-600">
-              <li>
-                <strong className="text-neutral-900">
-                  IP-Based Rate Limiting (<code className="font-mono text-[11px]">slowapi</code>):
-                </strong>{" "}
-                Enforces strict per-IP rate limits (5 uploads/min on{" "}
-                <code className="font-mono text-[11px]">POST /notes/upload</code>, 10 retries/min on{" "}
-                <code className="font-mono text-[11px]">POST /notes/:id/retry</code>, and 60
-                requests/min on read endpoints).
-              </li>
-              <li>
-                <strong className="text-neutral-900">Reverse Proxy IP Extraction:</strong> Inspects{" "}
-                <code className="font-mono text-[11px]">CF-Connecting-IP</code> and{" "}
-                <code className="font-mono text-[11px]">X-Forwarded-For</code> headers to accurately
-                identify client IPs behind Vercel and Render reverse proxies.
-              </li>
-              <li>
-                <strong className="text-neutral-900">HTTP Security Headers:</strong> Enforces{" "}
-                <code className="font-mono text-[11px]">X-Content-Type-Options: nosniff</code>,{" "}
-                <code className="font-mono text-[11px]">X-Frame-Options: DENY</code>,{" "}
-                <code className="font-mono text-[11px]">X-XSS-Protection</code>, and{" "}
-                <code className="font-mono text-[11px]">Referrer-Policy</code> headers on all
-                responses.
+                <strong className="text-neutral-900">Indic Code-Switching:</strong> Add language
+                selection dropdown for Gnani's Indic STT models (Hindi, Kannada, Tamil, Telugu,
+                Marathi).
               </li>
             </ul>
           </div>

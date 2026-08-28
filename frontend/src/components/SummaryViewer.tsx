@@ -32,17 +32,16 @@ export default function SummaryViewer({ summary }: Props) {
   }
 
   const handleCopy = () => {
-    const parts = [`SUMMARY:\n${structured.executive_summary || "N/A"}`];
+    const textToCopy = `
+SUMMARY:
+${structured.executive_summary || "N/A"}
 
-    if (structured.key_takeaways && structured.key_takeaways.length > 0) {
-      parts.push(`TAKEAWAYS:\n${structured.key_takeaways.map((item) => `- ${item}`).join("\n")}`);
-    }
+TAKEAWAYS:
+${structured.key_takeaways?.map((item) => `- ${item}`).join("\n") || "None"}
 
-    if (structured.action_items && structured.action_items.length > 0) {
-      parts.push(`ACTION ITEMS:\n${structured.action_items.map((item) => `- ${item}`).join("\n")}`);
-    }
-
-    const textToCopy = parts.join("\n\n").trim();
+ACTION ITEMS:
+${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
+    `.trim();
 
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);

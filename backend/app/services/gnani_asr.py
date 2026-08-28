@@ -17,10 +17,7 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
       - Form Field: audio_file
       - Form Field: language_code (en-IN)
     """
-    api_key = settings.GNANI_API_KEY or os.getenv("GNANI_API_KEY")
-    if not api_key:
-        raise ValueError("Gnani STT API Key (GNANI_API_KEY) is missing in Render environment variables.")
-
+    api_key = settings.GNANI_API_KEY
     filename = os.path.basename(chunk_file_path)
     ext = os.path.splitext(filename)[1].lower()
 
@@ -31,9 +28,7 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
         mime_type = "audio/mp4"
 
     headers = {
-        "X-API-Key-ID": api_key.strip(),
-        "User-Agent": "GnaniSTTClient/3.0",
-        "Accept": "application/json"
+        "X-API-Key-ID": api_key,
     }
 
     with open(chunk_file_path, "rb") as audio_file:
@@ -46,13 +41,11 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
         "language_code": "en-IN"
     }
 
-    stt_url = settings.GNANI_STT_PROXY_URL or os.getenv("GNANI_STT_PROXY_URL") or settings.GNANI_STT_URL
-
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         try:
             response = await client.post(
-                stt_url,
+                settings.GNANI_STT_URL,
                 headers=headers,
                 files=files,
                 data=data
@@ -72,20 +65,13 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
 
         if response.status_code == 200:
             res_json = response.json()
-            logger.info(f"Gnani STT raw response for {filename}: {res_json}")
             transcript = (
                 res_json.get("transcript") or 
                 res_json.get("text") or 
                 res_json.get("result") or 
                 res_json.get("output", "")
             )
-            if isinstance(transcript, dict):
-                transcript = transcript.get("text") or transcript.get("transcript") or str(transcript)
-            elif isinstance(transcript, list):
-                transcript = " ".join([str(item.get("text", item)) if isinstance(item, dict) else str(item) for item in transcript])
-            
-            clean_text = str(transcript).strip() if transcript else ""
-            return clean_text
+            return str(transcript).strip() if transcript else ""
             
         if response.status_code == 429 and attempt < max_retries:
             logger.warning(f"Gnani STT API Rate Limited (429). Pausing {attempt * 2}s before retry {attempt}/{max_retries}...")
@@ -93,10 +79,8 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
             continue
 
         logger.error(f"Gnani STT API Error (HTTP {response.status_code}): {response.text}")
-        if response.status_code == 401:
+        if response.status_code in (401, 403):
             raise ValueError("Gnani STT Authentication Failed: Invalid X-API-Key-ID.")
-        if response.status_code == 403:
-            raise ValueError("Gnani STT API Access Forbidden (HTTP 403). Please check your Gnani API key permissions.")
         raise ValueError(f"Gnani STT Error (HTTP {response.status_code}: {response.text})")
 
     raise ValueError("Gnani STT API rate limit exceeded. Please try again.")
@@ -117,17 +101,18 @@ async def transcribe_audio_gnani(file_path: str) -> str:
 
     # 1. Load Audio & Check Duration
     try:
-        audio = AudioSegment.from_file(file_path)
-    except Exception:
         ext = os.path.splitext(file_path)[1].lower().lstrip(".")
         if ext == "m4a":
             ext = "mp4"
         audio = AudioSegment.from_file(file_path, format=ext if ext else None)
-
-    duration_seconds = len(audio) / 1000.0
+        duration_seconds = len(audio) / 1000.0
+    except Exception as e:
+        logger.warning(f"Could not calculate audio duration with pydub: {e}. Sending single request...")
+        audio = None
+        duration_seconds = 0.0
 
     # 2. Short audio (<= 25 seconds): Send directly
-    if duration_seconds <= 25.0:
+    if not audio or duration_seconds <= 25.0:
         async with httpx.AsyncClient(timeout=120.0) as client:
             return await _transcribe_single_chunk(client, file_path)
 
