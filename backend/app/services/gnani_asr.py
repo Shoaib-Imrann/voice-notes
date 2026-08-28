@@ -46,11 +46,13 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
         "language_code": "en-IN"
     }
 
+    stt_url = settings.GNANI_STT_PROXY_URL or os.getenv("GNANI_STT_PROXY_URL") or settings.GNANI_STT_URL
+
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         try:
             response = await client.post(
-                settings.GNANI_STT_URL,
+                stt_url,
                 headers=headers,
                 files=files,
                 data=data

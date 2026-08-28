@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     GNANI_API_KEY: str | None = None
     GNANI_STT_URL: str = "https://api.vachana.ai/stt/v3"
+    GNANI_STT_PROXY_URL: str | None = None
     
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-3.6-flash"
