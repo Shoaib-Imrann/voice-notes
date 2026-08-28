@@ -98,7 +98,28 @@ async def upload_audio_note(
             detail=f"File exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB."
         )
 
-    # 3. Create Note Record in DB
+    # 3. Convert non-MP3/WAV audio to MP3 for universal web player playback (Safari/iOS/Chrome)
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext not in (".mp3", ".wav"):
+        try:
+            from pydub import AudioSegment
+            mp3_filename = f"{file_id}_{os.path.splitext(clean_filename)[0]}.mp3"
+            mp3_path = os.path.join(settings.UPLOAD_DIR, mp3_filename)
+            format_name = ext.lstrip(".")
+            if format_name == "m4a":
+                format_name = "mp4"
+            audio_segment = AudioSegment.from_file(file_path, format=format_name if format_name else None)
+            audio_segment.export(mp3_path, format="mp3", bitrate="128k")
+            
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            file_path = mp3_path
+            safe_filename = mp3_filename
+            file_size = os.path.getsize(file_path)
+        except Exception as conv_err:
+            logger.warning(f"Could not convert {ext} to mp3: {conv_err}. Keeping original file.")
+
+    # 4. Create Note Record in DB
     note_title = title.strip() if title and title.strip() else os.path.splitext(file.filename)[0]
     note_title = note_title[:40]
     note_slug = generate_slug(note_title, file_id)

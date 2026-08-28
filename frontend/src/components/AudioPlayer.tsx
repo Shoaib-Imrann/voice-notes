@@ -68,7 +68,7 @@ export default function AudioPlayer({
   };
 
   const handleLoadedMetadata = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !Number.isNaN(audioRef.current.duration)) {
       setDuration(audioRef.current.duration);
     }
   };
@@ -120,6 +120,10 @@ export default function AudioPlayer({
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
+    setDuration(0);
+    if (audioRef.current) {
+      audioRef.current.load();
+    }
   }, [audioUrl]);
 
   return (
@@ -127,8 +131,10 @@ export default function AudioPlayer({
       <audio
         ref={audioRef}
         src={audioUrl}
+        preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onCanPlayThrough={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
       >
         <track kind="captions" />
