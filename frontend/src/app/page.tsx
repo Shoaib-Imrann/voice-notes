@@ -412,13 +412,21 @@ function DashboardContent() {
 
                     {/* 3. AI Summary - Generous height on mobile, full-height on desktop */}
                     <div className="min-h-[380px] lg:min-h-0 lg:flex-1 lg:h-full flex flex-col">
-                      <SummaryViewer summary={activeNote.summary} />
+                      <SummaryViewer
+                        summary={activeNote.summary}
+                        status={activeNote.status}
+                        errorMessage={activeNote.error_message}
+                      />
                     </div>
                   </div>
 
                   {/* Right Column: Dedicated to Transcript - Increased height on mobile */}
                   <div className="lg:col-span-5 min-h-[540px] lg:min-h-0 lg:h-full flex flex-col">
-                    <TranscriptViewer transcript={activeNote.transcript} />
+                    <TranscriptViewer
+                      transcript={activeNote.transcript}
+                      status={activeNote.status}
+                      errorMessage={activeNote.error_message}
+                    />
                   </div>
                 </div>
               </div>

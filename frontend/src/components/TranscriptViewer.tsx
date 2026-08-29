@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 interface Props {
   transcript?: string | null;
+  status?: string;
+  errorMessage?: string | null;
 }
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
@@ -35,7 +37,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function TranscriptViewer({ transcript }: Props) {
+export default function TranscriptViewer({ transcript, status, errorMessage }: Props) {
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -123,8 +125,24 @@ export default function TranscriptViewer({ transcript }: Props) {
   }, [paragraphs, search]);
 
   if (!transcript) {
+    if (status === "FAILED") {
+      return (
+        <div className="flex flex-col items-center justify-center h-full rounded-2xl border border-neutral-200 bg-neutral-50/50 p-8 text-center space-y-2 select-none">
+          <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-1">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xs font-semibold text-neutral-800">Transcript Unavailable</h3>
+          <p className="text-[11px] text-neutral-500 max-w-xs leading-relaxed">
+            Click the retry button above to run speech recognition again.
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex flex-col h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4 animate-pulse">
+      <div className="flex flex-col h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4 animate-pulse select-none">
         <div className="flex items-center justify-between">
           <div className="h-5 w-24 rounded-md bg-neutral-100" />
           <div className="h-7 w-7 rounded-lg bg-neutral-100" />

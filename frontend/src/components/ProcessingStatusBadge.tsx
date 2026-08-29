@@ -25,24 +25,29 @@ export default function ProcessingStatusBadge({
 
   if (status === "FAILED") {
     return (
-      <div className="flex items-center justify-between gap-3 py-1.5 px-1 text-xs text-red-600 font-sans select-none">
-        <div className="flex items-center gap-2 min-w-0">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
-          <span className="truncate">{errorMessage || "Processing failed."}</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-red-200 bg-red-50/80 text-xs text-red-700 font-sans shadow-xs">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+          <div className="space-y-1 min-w-0">
+            <span className="font-semibold text-red-900 block text-xs">Processing Failed</span>
+            <p className="text-red-700 leading-relaxed break-words text-xs font-normal">
+              {errorMessage || "An unexpected error occurred during audio processing."}
+            </p>
+          </div>
         </div>
         {onRetry && (
           <button
             type="button"
             onClick={onRetry}
             disabled={isRetrying}
-            className="flex items-center gap-1.5 shrink-0 text-xs font-medium text-neutral-900 hover:text-neutral-600 disabled:opacity-50 transition cursor-pointer"
+            className="flex items-center justify-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
           >
             {isRetrying ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <RotateCcw className="h-3.5 w-3.5" />
             )}
-            <span>{hasTranscript ? "Retry summary" : "Retry"}</span>
+            <span>{hasTranscript ? "Retry Summary" : "Retry Transcription"}</span>
           </button>
         )}
       </div>

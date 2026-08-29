@@ -129,6 +129,14 @@ async def upload_audio_note(
     supabase_file_url = await upload_to_supabase_storage(file_path, safe_filename)
     final_file_url = supabase_file_url or f"/static/uploads/{safe_filename}"
 
+    # Calculate audio duration immediately if possible so player has it right away
+    duration_secs = 0.0
+    try:
+        from app.services.audio import get_audio_duration_and_validate
+        duration_secs = get_audio_duration_and_validate(file_path)
+    except Exception as e:
+        logger.warning(f"Could not compute initial audio duration for {file_id}: {e}")
+
     new_note = AudioNote(
         id=file_id,
         slug=note_slug,
@@ -136,6 +144,7 @@ async def upload_audio_note(
         filename=safe_filename,
         file_path=file_path,
         file_url=final_file_url,
+        duration_seconds=duration_secs,
         file_size_bytes=file_size,
         status="UPLOADED"
     )

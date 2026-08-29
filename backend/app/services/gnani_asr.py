@@ -29,6 +29,8 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
 
     headers = {
         "X-API-Key-ID": api_key,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
     }
 
     with open(chunk_file_path, "rb") as audio_file:
@@ -55,13 +57,13 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
             if attempt < max_retries:
                 await asyncio.sleep(attempt * 2)
                 continue
-            raise ValueError("Gnani STT API request timed out. Please try again.")
+            raise ValueError("Gnani STT API request timed out after 120s. Please try again.")
         except httpx.RequestError as req_err:
             logger.error(f"Gnani STT Network Error: {req_err}")
             if attempt < max_retries:
                 await asyncio.sleep(attempt * 2)
                 continue
-            raise ValueError(f"Network error connecting to Gnani STT API: {str(req_err)}")
+            raise ValueError(f"Network connection failure contacting Gnani STT API: {str(req_err)}")
 
         if response.status_code == 200:
             res_json = response.json()
@@ -78,12 +80,33 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
             await asyncio.sleep(attempt * 2)
             continue
 
-        logger.error(f"Gnani STT API Error (HTTP {response.status_code}): {response.text}")
-        if response.status_code in (401, 403):
-            raise ValueError("Gnani STT Authentication Failed: Invalid X-API-Key-ID.")
-        raise ValueError(f"Gnani STT Error (HTTP {response.status_code}: {response.text})")
+        body_text = response.text.strip()
+        logger.error(f"Gnani STT API Error (HTTP {response.status_code}): {body_text[:300]}")
 
-    raise ValueError("Gnani STT API rate limit exceeded. Please try again.")
+        # Detect Cloudflare WAF block HTML page vs Gnani API error
+        if "Cloudflare" in body_text or "cf-wrapper" in body_text or "<!DOCTYPE html>" in body_text:
+            raise ValueError(f"Gnani STT API connection blocked by Cloudflare WAF on vachana.ai (HTTP {response.status_code}).")
+
+        try:
+            err_json = response.json()
+            err_msg = (
+                err_json.get("error", {}).get("message")
+                or err_json.get("message")
+                or err_json.get("detail")
+            )
+            if err_msg:
+                raise ValueError(f"Gnani STT API: {err_msg}")
+        except ValueError as ve:
+            raise ve
+        except Exception:
+            pass
+
+        if response.status_code in (401, 403):
+            raise ValueError(f"Gnani STT Authentication Failed (HTTP {response.status_code}): Invalid X-API-Key-ID.")
+
+        raise ValueError(f"Gnani STT API returned HTTP {response.status_code}: {body_text[:100]}")
+
+    raise ValueError("Gnani STT API rate limit exceeded after maximum retries. Please try again.")
 
 async def transcribe_audio_gnani(file_path: str) -> str:
     """

@@ -7,5 +7,5 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 120000, // 2 minutes timeout for audio uploads and processing
 });
