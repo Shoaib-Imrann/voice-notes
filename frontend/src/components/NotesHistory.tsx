@@ -1,8 +1,7 @@
 "use client";
 
 import type { AudioNote } from "@/types/note";
-import { Cpu, FileAudio, Github, PanelLeftClose, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { FileAudio, PanelLeftClose, Plus, Trash2 } from "lucide-react";
 import React, { useMemo } from "react";
 
 interface Props {
@@ -173,26 +172,6 @@ export default function NotesHistory({
             );
           })
         )}
-      </div>
-
-      {/* Footer System Navigation Links */}
-      <div className="p-2.5 border-t border-neutral-800/80 grid grid-cols-2 gap-1.5 text-xs shrink-0">
-        <Link
-          href="/architecture"
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 px-2 py-2 text-neutral-300 hover:text-white transition text-center"
-        >
-          <Cpu className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-          <span className="truncate text-[11px] font-medium">Architecture</span>
-        </Link>
-        <a
-          href="https://github.com/Shoaib-Imrann/voice-notes"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 px-2 py-2 text-neutral-300 hover:text-white transition text-center"
-        >
-          <Github className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-          <span className="truncate text-[11px] font-medium">Repository</span>
-        </a>
       </div>
     </div>
   );

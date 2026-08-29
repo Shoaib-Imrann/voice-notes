@@ -40,14 +40,15 @@ export default function ProcessingStatusBadge({
             type="button"
             onClick={onRetry}
             disabled={isRetrying}
-            className="flex items-center justify-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 shrink-0 px-3.5 py-2.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-md bg-red-600 hover:bg-red-700 text-white font-medium text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
           >
             {isRetrying ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <RotateCcw className="h-3.5 w-3.5" />
             )}
-            <span>{hasTranscript ? "Retry Summary" : "Retry Transcription"}</span>
+            <span className="sm:hidden">{hasTranscript ? "Retry Summary" : "Retry Transcription"}</span>
+            <span className="hidden sm:inline">{hasTranscript ? "Retry Summary" : "Retry"}</span>
           </button>
         )}
       </div>

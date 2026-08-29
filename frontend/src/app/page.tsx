@@ -346,27 +346,12 @@ function DashboardContent() {
 
       {/* Main Content Workspace */}
       <div className="relative flex flex-1 flex-col h-full max-h-[100dvh] overflow-hidden min-w-0">
-        {/* Floating Sidebar Toggle Button on mobile only when active note is displayed and sidebar is closed */}
-        {activeNote && !isSidebarOpen && (
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(true)}
-            className="sm:hidden absolute top-3.5 left-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 backdrop-blur-xs border border-neutral-200 shadow-xs text-neutral-700 hover:text-neutral-900 transition cursor-pointer"
-            title="Open sidebar"
-            aria-label="Open sidebar"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
-        )}
-
-        {/* Minimal Nav Switcher only on empty hero state */}
-        {!activeNote && (
-          <Navbar
-            showNavSwitcher={true}
-            onToggleSidebar={() => setIsSidebarOpen(true)}
-            isSidebarOpen={isSidebarOpen}
-          />
-        )}
+        {/* Top Navbar with Notes/Architecture Switcher, Mobile Sidebar Toggle, and GitHub */}
+        <Navbar
+          showNavSwitcher={true}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+          isSidebarOpen={isSidebarOpen}
+        />
 
         <main className="flex-1 min-h-0 overflow-y-auto bg-white flex flex-col">
           {selectedNoteId && isLoadingSelectedNote ? (
@@ -380,7 +365,7 @@ function DashboardContent() {
             <NewNoteHero onUploadSuccess={handleUploadSuccess} />
           ) : (
             /* Active Selected Note View Workspace */
-            <div className="flex-1 overflow-y-auto lg:overflow-hidden px-4 pt-14 pb-6 sm:p-6">
+            <div className="flex-1 overflow-y-auto lg:overflow-hidden px-4 py-3 sm:p-6">
               <div className="h-full flex flex-col w-full max-w-[1600px] mx-auto space-y-4">
                 {/* 2-Column Main Workspace Grid (Stacks on mobile, 2-column on desktop) */}
                 <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
@@ -468,7 +453,7 @@ function DashboardContent() {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setNoteToDelete(null)}
-                className="px-3.5 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 transition cursor-pointer disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 transition cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -476,7 +461,7 @@ function DashboardContent() {
                 type="button"
                 disabled={isDeleting}
                 onClick={confirmDeleteNote}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-red-600 hover:bg-red-700 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>

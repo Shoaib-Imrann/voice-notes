@@ -1,7 +1,10 @@
-import logging
+import os
 import json
+import logging
 import asyncio
+import httpx
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.note import AudioNote
 from app.services.audio import get_audio_duration_and_validate
@@ -15,6 +18,7 @@ def process_audio_note_task(note_id: str):
     Background worker process to handle audio duration calculation,
     Gnani ASR transcription (skipped if transcript already exists),
     and Gemini LLM summarization.
+    Cleans up local disk working file once cloud processing completes.
     """
     db: Session = SessionLocal()
     try:
@@ -23,12 +27,33 @@ def process_audio_note_task(note_id: str):
             logger.error(f"Task error: Note {note_id} not found in DB.")
             return
 
+        # 0. Ensure audio file exists locally (download from Supabase Storage if missing on ephemeral disk)
+        if not os.path.exists(note.file_path):
+            if note.file_url and note.file_url.startswith("http"):
+                logger.info(f"File {note.file_path} missing on local disk. Fetching from Supabase: {note.file_url}")
+                os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+                local_path = os.path.join(settings.UPLOAD_DIR, note.filename)
+                try:
+                    with httpx.Client(timeout=60.0) as client:
+                        res = client.get(note.file_url)
+                        if res.status_code == 200:
+                            with open(local_path, "wb") as f:
+                                f.write(res.content)
+                            note.file_path = local_path
+                            db.commit()
+                            logger.info(f"Successfully downloaded audio file to {local_path}")
+                        else:
+                            logger.error(f"Failed to fetch {note.file_url}: HTTP {res.status_code}")
+                except Exception as dl_err:
+                    logger.error(f"Error downloading audio from Supabase Storage: {dl_err}")
+
         # 1. Calculate audio duration if missing
         if not note.duration_seconds or note.duration_seconds == 0.0:
             try:
-                duration = get_audio_duration_and_validate(note.file_path)
-                note.duration_seconds = duration
-                db.commit()
+                if os.path.exists(note.file_path):
+                    duration = get_audio_duration_and_validate(note.file_path)
+                    note.duration_seconds = duration
+                    db.commit()
             except Exception as e:
                 logger.warning(f"Could not compute audio duration for {note_id}: {e}")
 
@@ -70,6 +95,7 @@ def process_audio_note_task(note_id: str):
             note.error_message = None
             db.commit()
             logger.info(f"Note {note_id} processing completed successfully.")
+
         except Exception as e:
             logger.error(f"Summarization failed for note {note_id}: {e}")
             db.rollback()
@@ -82,4 +108,14 @@ def process_audio_note_task(note_id: str):
     except Exception as outer_e:
         logger.error(f"Unexpected worker failure for note {note_id}: {outer_e}")
     finally:
-        db.close()
+        # Guarantee server disk cleanup: if file is stored in Supabase, remove local copy regardless of success or failure
+        try:
+            note_record = db.query(AudioNote).filter(AudioNote.id == note_id).first()
+            if note_record and note_record.file_url and note_record.file_url.startswith("http"):
+                if note_record.file_path and os.path.exists(note_record.file_path):
+                    os.remove(note_record.file_path)
+                    logger.info(f"Cleaned up temporary working audio file {note_record.file_path} from server disk.")
+        except Exception as cleanup_err:
+            logger.warning(f"Error during file cleanup: {cleanup_err}")
+        finally:
+            db.close()
