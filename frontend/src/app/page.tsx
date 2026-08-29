@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, PanelLeftOpen, Plus, RotateCw } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import AudioPlayer from '@/components/AudioPlayer';
@@ -58,14 +58,12 @@ function NoteWorkspaceSkeleton() {
         {/* Right Column: Transcript Skeleton */}
         <div className="lg:col-span-5 h-full rounded-2xl border border-neutral-200 bg-white p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="h-5 w-24 rounded-md bg-neutral-100" />
+            <div className="h-5 w-28 rounded-md bg-neutral-100" />
             <div className="h-7 w-7 rounded-lg bg-neutral-100" />
           </div>
-          <div className="h-8 w-full rounded-xl bg-neutral-100" />
           <div className="space-y-2.5 pt-2">
             <div className="h-3.5 w-full rounded-md bg-neutral-100" />
-            <div className="h-3.5 w-[95%] rounded-md bg-neutral-100" />
-            <div className="h-3.5 w-[90%] rounded-md bg-neutral-100" />
+            <div className="h-3.5 w-[96%] rounded-md bg-neutral-100" />
             <div className="h-3.5 w-[88%] rounded-md bg-neutral-100" />
             <div className="h-3.5 w-[93%] rounded-md bg-neutral-100" />
             <div className="h-3.5 w-[70%] rounded-md bg-neutral-100" />
@@ -78,8 +76,11 @@ function NoteWorkspaceSkeleton() {
 
 function DashboardContent() {
   const queryClient = useQueryClient();
+  const params = useParams();
   const searchParams = useSearchParams();
+  const routeSlug = typeof params?.slug === 'string' ? params.slug : undefined;
   const urlSlugOrId =
+    routeSlug ||
     searchParams.get('slug') ||
     searchParams.get('note') ||
     searchParams.get('noteId') ||
@@ -93,7 +94,7 @@ function DashboardContent() {
   const [isRetrying, setIsRetrying] = useState(false);
   const notifiedStatusRef = useRef<Record<string, string>>({});
 
-  // Sync state when URL searchParams slug/noteId changes (e.g. browser history navigation)
+  // Sync state when URL params or slug change (e.g. browser back/forward navigation)
   useEffect(() => {
     if (urlSlugOrId !== undefined) {
       setSelectedNoteId(urlSlugOrId);
@@ -112,7 +113,7 @@ function DashboardContent() {
         localStorage.getItem('lastSelectedNoteId');
       if (storedSlugOrId) {
         setSelectedNoteId(storedSlugOrId);
-        const newUrl = `${window.location.pathname}?slug=${storedSlugOrId}`;
+        const newUrl = `/notes/${storedSlugOrId}`;
         window.history.replaceState(null, '', newUrl);
       }
     }
@@ -154,6 +155,7 @@ function DashboardContent() {
     data: selectedNote,
     isLoading: isLoadingSelectedNote,
     isError: isErrorSelectedNote,
+    error: selectedNoteError,
     refetch: refetchSelectedNote,
   } = useQuery<AudioNote>({
     queryKey: ['note', selectedNoteId],
@@ -172,7 +174,7 @@ function DashboardContent() {
     },
   });
 
-  // Helper to update selectedNoteId and sync with localStorage and URL using slug
+  // Helper to update selectedNoteId and sync with localStorage and clean URL path
   const updateSelectedNoteId = (noteOrIdentifier?: AudioNote | string) => {
     let identifier: string | undefined;
     if (typeof noteOrIdentifier === 'string') {
@@ -185,12 +187,12 @@ function DashboardContent() {
     if (typeof window !== 'undefined') {
       if (identifier) {
         localStorage.setItem('lastSelectedNoteSlug', identifier);
-        const newUrl = `${window.location.pathname}?slug=${identifier}`;
-        window.history.replaceState(null, '', newUrl);
+        const newUrl = `/notes/${identifier}`;
+        window.history.pushState(null, '', newUrl);
       } else {
         localStorage.removeItem('lastSelectedNoteSlug');
         localStorage.removeItem('lastSelectedNoteId');
-        window.history.replaceState(null, '', window.location.pathname);
+        window.history.pushState(null, '', '/');
       }
     }
   };
@@ -235,6 +237,25 @@ function DashboardContent() {
 
   const handleNewNote = () => {
     updateSelectedNoteId(undefined);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await apiClient.delete(`/notes/${noteId}`);
+      toast.success('Note deleted');
+
+      if (
+        selectedNote?.id === noteId ||
+        selectedNote?.slug === selectedNoteId ||
+        selectedNoteId === noteId
+      ) {
+        updateSelectedNoteId(undefined);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    } catch (_err) {
+      toast.error('Failed to delete note');
+    }
   };
 
   const promptDeleteNote = (noteId: string, noteTitle?: string) => {
@@ -319,7 +340,7 @@ function DashboardContent() {
                   setIsSidebarOpen(false);
                 }
               }}
-              onDeleteNote={promptDeleteNote}
+              onDeleteNote={handleDeleteNote}
               isLoading={isLoadingNotes}
               isError={isErrorNotes}
               onRefresh={refetchNotes}
@@ -377,40 +398,109 @@ function DashboardContent() {
             /* Skeleton Loading state while fetching selected note */
             <NoteWorkspaceSkeleton />
           ) : selectedNoteId && isErrorSelectedNote ? (
-            /* Instant Server Down / Note Error Screen */
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <div className="max-w-md w-full p-6 rounded-2xl border border-red-200 bg-red-50/40 space-y-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600 mx-auto">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <h2 className="text-base font-semibold text-neutral-900">
-                  Server Offline or Unreachable
-                </h2>
-                <p className="text-xs text-neutral-500 leading-relaxed font-sans">
-                  The service might be starting up (cold start) or offline.
-                </p>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      refetchSelectedNote();
-                      refetchNotes();
-                    }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition cursor-pointer"
+            /* Explicit HTTP Error Code vs Server Down Screen */
+            (() => {
+              const status = (
+                selectedNoteError as {
+                  response?: { status?: number; data?: { detail?: string } };
+                }
+              )?.response?.status;
+              const detail = (
+                selectedNoteError as {
+                  response?: { data?: { detail?: string } };
+                }
+              )?.response?.data?.detail;
+
+              let title = 'Server Offline or Unreachable';
+              let description =
+                'Could not connect to the backend server. The service might be starting up (cold start) or offline.';
+              let is404 = false;
+
+              if (status === 404) {
+                is404 = true;
+                title = 'HTTP 404 — Note Not Found';
+                description =
+                  detail ||
+                  'This audio note does not exist or has been deleted.';
+              } else if (status === 400) {
+                title = 'HTTP 400 — Invalid Request';
+                description = detail || 'The requested operation was invalid.';
+              } else if (status === 429) {
+                title = 'HTTP 429 — Rate Limit Exceeded';
+                description =
+                  detail ||
+                  'Too many requests. Please wait a moment before trying again.';
+              } else if (status === 503) {
+                title = 'HTTP 503 — Service Unavailable';
+                description =
+                  detail || 'The backend service is temporarily unavailable.';
+              } else if (status === 500) {
+                title = 'HTTP 500 — Internal Server Error';
+                description =
+                  detail || 'An unexpected error occurred on the server.';
+              }
+
+              return (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                  <div
+                    className={`max-w-md w-full p-6 rounded-2xl border space-y-3 ${
+                      is404
+                        ? 'border-neutral-200 bg-neutral-50/60'
+                        : 'border-red-200 bg-red-50/40'
+                    }`}
                   >
-                    <RotateCw className="h-3 w-3" />
-                    <span>Retry Connection</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNewNote}
-                    className="px-4 py-2 text-xs font-medium bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition cursor-pointer"
-                  >
-                    New Note
-                  </button>
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full mx-auto ${
+                        is404
+                          ? 'bg-neutral-100 text-neutral-600'
+                          : 'bg-red-100 text-red-600'
+                      }`}
+                    >
+                      <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <h2 className="text-base font-semibold text-neutral-900">
+                      {title}
+                    </h2>
+                    <p className="text-xs text-neutral-500 leading-relaxed font-sans">
+                      {description}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      {is404 ? (
+                        <button
+                          type="button"
+                          onClick={handleNewNote}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Create New Note</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              refetchSelectedNote();
+                              refetchNotes();
+                            }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition cursor-pointer"
+                          >
+                            <RotateCw className="h-3 w-3" />
+                            <span>Retry Connection</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleNewNote}
+                            className="px-4 py-2 text-xs font-medium bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition cursor-pointer"
+                          >
+                            New Note
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()
           ) : !isMounted && !selectedNoteId ? (
             /* Initial skeleton loading state until client mount */
             <NoteWorkspaceSkeleton />
@@ -476,7 +566,7 @@ function DashboardContent() {
         </main>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Centered Delete Confirmation Dialog when deleting from inside the note */}
       {noteToDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity select-none"

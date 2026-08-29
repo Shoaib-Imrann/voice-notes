@@ -152,17 +152,101 @@ export default function AudioPlayer({
         <track kind="captions" />
       </audio>
 
-      {/* 1. Dedicated Separate Line for Title & Metadata */}
-      <div className="flex items-start justify-between gap-3">
+      {/* --- DESKTOP LAYOUT (md: and above: Title on left, Controls on right) --- */}
+      <div className="hidden md:flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
-          <h2 className="text-sm sm:text-base font-bold text-neutral-900 leading-snug break-words">
+          <h2 className="text-sm lg:text-base font-bold text-neutral-900 leading-snug break-words">
             {title}
           </h2>
-          <p className="text-[11px] font-sans text-neutral-500">
-            {formatTime(duration)}
-            {formattedDate && ` • ${formattedDate}`}
-            {formattedSize && ` • ${formattedSize}`}
-          </p>
+          {(formattedDate || formattedSize) && (
+            <p className="text-[11px] font-sans text-neutral-500">
+              {formattedDate}
+              {formattedDate && formattedSize && ' • '}
+              {formattedSize}
+            </p>
+          )}
+        </div>
+
+        {/* Desktop Controls in same row */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={togglePlay}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white shadow-xs transition hover:bg-neutral-800 cursor-pointer"
+            title={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? (
+              <Pause className="h-3.5 w-3.5" />
+            ) : (
+              <Play className="h-3.5 w-3.5 ml-0.5" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => skipSeconds(-10)}
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title="Rewind 10s"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => skipSeconds(10)}
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title="Forward 10s"
+          >
+            <RotateCw className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={cyclePlaybackRate}
+            className="rounded-lg border border-neutral-200 bg-neutral-50 px-1.5 py-1 text-[11px] font-sans font-semibold text-neutral-700 hover:bg-neutral-100 transition cursor-pointer"
+            title="Cycle speed"
+          >
+            {playbackRate}x
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? (
+              <VolumeX className="h-3.5 w-3.5" />
+            ) : (
+              <Volume2 className="h-3.5 w-3.5" />
+            )}
+          </button>
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer shrink-0 ml-0.5"
+              title="Delete Note"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* --- MOBILE LAYOUT: ROW 1 (Title + Delete on mobile) --- */}
+      <div className="flex md:hidden items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <h2 className="text-sm font-bold text-neutral-900 leading-snug break-words">
+            {title}
+          </h2>
+          {(formattedDate || formattedSize) && (
+            <p className="text-[11px] font-sans text-neutral-500">
+              {formattedDate}
+              {formattedDate && formattedSize && ' • '}
+              {formattedSize}
+            </p>
+          )}
         </div>
 
         {onDelete && (
@@ -177,7 +261,7 @@ export default function AudioPlayer({
         )}
       </div>
 
-      {/* 2. Progress Slider Bar */}
+      {/* --- PROGRESS SLIDER (Both Mobile and Desktop) --- */}
       <div className="space-y-1 pt-0.5">
         <div className="relative">
           <input
@@ -195,13 +279,14 @@ export default function AudioPlayer({
         </div>
       </div>
 
-      {/* 3. Playback Controls & Actions */}
-      <div className="flex items-center justify-between pt-0.5">
+      {/* --- MOBILE LAYOUT: ROW 3 (Controls Bar on mobile) --- */}
+      <div className="flex md:hidden items-center justify-between pt-0.5">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={togglePlay}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-sm transition hover:bg-neutral-800 cursor-pointer"
+            title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
               <Pause className="h-4 w-4" />
@@ -228,7 +313,7 @@ export default function AudioPlayer({
           </button>
         </div>
 
-        {/* Speed & Volume Controls */}
+        {/* Speed & Volume Controls on Mobile */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -243,6 +328,7 @@ export default function AudioPlayer({
             type="button"
             onClick={toggleMute}
             className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+            title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? (
               <VolumeX className="h-4 w-4" />

@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/axios';
 import type { AudioNote } from '@/types/note';
@@ -24,6 +24,20 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Enter key trigger to process staged audio immediately
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && selectedFile && !isUploading) {
+        e.preventDefault();
+        handleUpload();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedFile, isUploading, title]);
 
   const allowedExtensions = [
     '.mp3',
@@ -221,7 +235,13 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
           </p>
         </button>
       ) : (
-        <div className="mt-3 space-y-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleUpload();
+          }}
+          className="mt-3 space-y-3"
+        >
           <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 p-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-900 text-white">
@@ -243,7 +263,7 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
                   setSelectedFile(null);
                   setTitle('');
                 }}
-                className="rounded-md p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
+                className="rounded-md p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -261,6 +281,7 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
               <input
                 id="note-title-input"
                 type="text"
+                autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Audio note title..."
@@ -290,10 +311,9 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
           )}
 
           <button
-            type="button"
-            onClick={handleUpload}
+            type="submit"
             disabled={isUploading}
-            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-neutral-900 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-neutral-800 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-neutral-900 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-neutral-800 disabled:opacity-50 cursor-pointer"
           >
             {isUploading ? (
               <>
@@ -304,7 +324,7 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
               <span>Process Audio</span>
             )}
           </button>
-        </div>
+        </form>
       )}
     </div>
   );

@@ -8,7 +8,7 @@ import {
   RotateCw,
   Trash2,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AudioNote } from '@/types/note';
 
 interface Props {
@@ -34,38 +34,33 @@ export default function NotesHistory({
   onRefresh,
   onToggleSidebar,
 }: Props) {
-  // Group notes by relative time (Today, Yesterday, Previous 7 Days, Older)
-  const groupedNotes = useMemo(() => {
-    const now = new Date();
-    const today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    ).getTime();
-    const yesterday = today - 86400000;
-    const sevenDaysAgo = today - 7 * 86400000;
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    top: number;
+    left: number;
+  } | null>(null);
 
-    const groups: { [key: string]: AudioNote[] } = {
-      Today: [],
-      Yesterday: [],
-      'Previous 7 Days': [],
-      Older: [],
+  // Close popover when clicking anywhere outside or scrolling
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setDeleteTarget(null);
     };
-
-    for (const note of notes) {
-      const createdTime = new Date(note.created_at).getTime();
-      if (createdTime >= today) {
-        groups.Today.push(note);
-      } else if (createdTime >= yesterday) {
-        groups.Yesterday.push(note);
-      } else if (createdTime >= sevenDaysAgo) {
-        groups['Previous 7 Days'].push(note);
-      } else {
-        groups.Older.push(note);
-      }
+    if (deleteTarget) {
+      window.addEventListener('click', handleGlobalClick);
+      window.addEventListener('scroll', handleGlobalClick, true);
     }
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('scroll', handleGlobalClick, true);
+    };
+  }, [deleteTarget]);
 
-    return groups;
+  // Sort notes descending by created_at (newest on top)
+  const sortedNotes = useMemo(() => {
+    return [...notes].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }, [notes]);
 
   const formatDuration = (secs?: number) => {
@@ -108,11 +103,10 @@ export default function NotesHistory({
         </button>
       </div>
 
-      {/* Notes List Grouped by Date */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-3 space-y-4">
+      {/* Notes List Sorted Descending */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 space-y-1">
         {isLoading ? (
           <div className="space-y-2 px-1 animate-pulse">
-            <div className="h-3 w-16 bg-neutral-800 rounded-md mb-2.5" />
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
@@ -135,81 +129,129 @@ export default function NotesHistory({
               <span>Retry</span>
             </button>
           </div>
-        ) : notes.length === 0 ? (
+        ) : sortedNotes.length === 0 ? (
           <div className="py-8 text-center text-xs text-neutral-500">
             No recordings yet.
           </div>
         ) : (
-          Object.entries(groupedNotes).map(([groupTitle, groupNotes]) => {
-            if (groupNotes.length === 0) return null;
+          sortedNotes.map((note) => {
+            const isSelected =
+              note.id === selectedNoteId ||
+              (note.slug && note.slug === selectedNoteId);
+            const duration = formatDuration(note.duration_seconds);
 
             return (
-              <div key={groupTitle} className="space-y-1">
-                <div className="px-2 text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
-                  {groupTitle}
+              <div
+                key={note.id}
+                onClick={() => onSelectNote(note)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onSelectNote(note);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className={`group flex items-center justify-between rounded-xl px-2.5 py-2 cursor-pointer transition text-xs ${
+                  isSelected
+                    ? 'bg-neutral-800 text-white font-medium shadow-xs'
+                    : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                  <FileAudio
+                    className={`h-4 w-4 shrink-0 ${
+                      isSelected
+                        ? 'text-white'
+                        : 'text-neutral-500 group-hover:text-neutral-300'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium leading-tight">
+                      {note.title}
+                    </p>
+                    {duration && (
+                      <span className="text-[10px] text-neutral-500 font-sans">
+                        {duration}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {groupNotes.map((note) => {
-                  const isSelected =
-                    note.id === selectedNoteId ||
-                    (note.slug && note.slug === selectedNoteId);
-                  const duration = formatDuration(note.duration_seconds);
 
-                  return (
-                    <div
-                      key={note.id}
-                      onClick={() => onSelectNote(note)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          onSelectNote(note);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      className={`group flex items-center justify-between rounded-xl px-2.5 py-2 cursor-pointer transition text-xs ${
-                        isSelected
-                          ? 'bg-neutral-800 text-white font-medium shadow-xs'
-                          : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 pr-1">
-                        <FileAudio
-                          className={`h-4 w-4 shrink-0 ${
-                            isSelected
-                              ? 'text-white'
-                              : 'text-neutral-500 group-hover:text-neutral-300'
-                          }`}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-medium leading-tight">
-                            {note.title}
-                          </p>
-                          {duration && (
-                            <span className="text-[10px] text-neutral-500 font-sans">
-                              {duration}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteNote(note.id, note.title);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-neutral-400 hover:text-red-400 hover:bg-neutral-700/50 transition shrink-0"
-                        title="Delete Note"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
+                <div className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (deleteTarget?.id === note.id) {
+                        setDeleteTarget(null);
+                      } else {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDeleteTarget({
+                          id: note.id,
+                          top: rect.top + rect.height / 2,
+                          left: rect.right + 12,
+                        });
+                      }
+                    }}
+                    className={`rounded-md p-1 transition shrink-0 cursor-pointer ${
+                      deleteTarget?.id === note.id
+                        ? 'opacity-100 text-red-400 bg-neutral-700/70'
+                        : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-400 hover:bg-neutral-700/50'
+                    }`}
+                    title="Delete Note"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Floating Speech Bubble Popover Outside the Sidebar */}
+      {deleteTarget && (
+        <div
+          style={{
+            top: `${deleteTarget.top}px`,
+            left: `${deleteTarget.left}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="presentation"
+          className="fixed -translate-y-1/2 z-50 w-44 rounded-xl border border-neutral-700 bg-[#222222] p-2.5 shadow-2xl space-y-2 text-left animate-in fade-in zoom-in-95 duration-100 select-none"
+        >
+          {/* Pointer arrow pointing LEFT towards the sidebar trash button */}
+          <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-3 w-3 rotate-45 border-l border-b border-neutral-700 bg-[#222222]" />
+
+          <p className="relative z-10 text-[11px] font-medium text-neutral-200 leading-tight">
+            Delete this note?
+          </p>
+          <div className="relative z-10 flex items-center justify-end gap-1.5 pt-0.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteTarget(null);
+              }}
+              className="px-2 py-1 text-[10px] font-medium text-neutral-400 hover:text-white rounded-md hover:bg-neutral-800 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteNote(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+              className="px-2.5 py-1 text-[10px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-md transition shadow-xs cursor-pointer"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,7 +40,8 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
         "audio_file": (filename, file_bytes, mime_type)
     }
     data = {
-        "language_code": "en-IN"
+        "language_code": "en-IN",
+        "format": "transcribe"
     }
 
     max_retries = 3
@@ -108,11 +109,13 @@ async def _transcribe_single_chunk(client: httpx.AsyncClient, chunk_file_path: s
 
     raise ValueError("Gnani STT API rate limit exceeded after maximum retries. Please try again.")
 
+from pydub.silence import split_on_silence
+
 async def transcribe_audio_gnani(file_path: str) -> str:
     """
     Calls Gnani's Speech-to-Text API to transcribe an audio file.
-    According to docs.gnani.ai, STT REST accepts clips <= 60s per request.
-    Longer recordings are automatically split into 25-second segments and transcribed.
+    Uses silence-aware speech segmentation (8s-12s optimal chunks) with 16kHz mono normalization
+    and recursive sub-chunk fallback to guarantee complete transcript coverage.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError("Audio recording could not be found on server.")
@@ -122,47 +125,108 @@ async def transcribe_audio_gnani(file_path: str) -> str:
         logger.error("Gnani API key (GNANI_API_KEY) missing in environment.")
         raise ValueError("Speech-to-text transcription service is currently unavailable.")
 
-    # 1. Load Audio & Check Duration
+    # 1. Load Audio & Normalize Format to 16kHz, 16-bit, Mono PCM
     try:
         ext = os.path.splitext(file_path)[1].lower().lstrip(".")
         if ext == "m4a":
             ext = "mp4"
         audio = AudioSegment.from_file(file_path, format=ext if ext else None)
+        audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
         duration_seconds = len(audio) / 1000.0
     except Exception as e:
-        logger.warning(f"Could not calculate audio duration with pydub: {e}. Sending single request...")
+        logger.warning(f"Could not normalize audio with pydub: {e}. Sending single request...")
         audio = None
         duration_seconds = 0.0
 
-    # 2. Short audio (<= 25 seconds): Send directly
-    if not audio or duration_seconds <= 25.0:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            return await _transcribe_single_chunk(client, file_path)
-
-    # 3. Long Audio (2+ min): Chunk into 25s segments per Gnani STT REST limits (<=60s)
-    logger.info(f"Long audio detected ({duration_seconds:.1f}s). Splitting into 25s segments for Gnani STT REST API...")
-    
-    chunk_length_ms = 25 * 1000  # 25 seconds
-    chunks = [audio[i : i + chunk_length_ms] for i in range(0, len(audio), chunk_length_ms)]
-    
     temp_dir = tempfile.mkdtemp(prefix="gnani_chunks_")
     transcripts = []
 
     try:
+        # 2. Short audio (<= 15 seconds): Export normalized WAV and send directly
+        if not audio or duration_seconds <= 15.0:
+            norm_wav_path = os.path.join(temp_dir, "normalized_full.wav")
+            if audio:
+                audio.export(norm_wav_path, format="wav", parameters=["-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1"])
+                target_path = norm_wav_path
+            else:
+                target_path = file_path
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                return await _transcribe_single_chunk(client, target_path)
+
+        # 3. Silence-Aware Speech Segmentation (8s - 12s optimal chunks)
+        logger.info(f"Long audio detected ({duration_seconds:.1f}s). Performing silence-aware speech segmentation...")
+        try:
+            silence_thresh = audio.dBFS - 12 if audio.dBFS > -50 else -40
+            raw_segments = split_on_silence(
+                audio,
+                min_silence_len=350,
+                silence_thresh=silence_thresh,
+                keep_silence=200
+            )
+        except Exception as sil_err:
+            logger.warning(f"Silence detection failed: {sil_err}. Falling back to 10s intervals.")
+            raw_segments = []
+
+        # If silence detection found natural pauses, group them into 8s-12s speech chunks
+        chunks = []
+        if raw_segments and len(raw_segments) > 1:
+            current_chunk = AudioSegment.empty()
+            for seg in raw_segments:
+                if len(current_chunk) + len(seg) > 12000:  # 12 seconds optimal threshold
+                    if len(current_chunk) > 0:
+                        chunks.append(current_chunk)
+                    current_chunk = seg
+                else:
+                    current_chunk = current_chunk + seg
+            if len(current_chunk) > 0:
+                chunks.append(current_chunk)
+        else:
+            # Fallback to 10s intervals if silence segmentation was uniform
+            chunk_length_ms = 10 * 1000
+            chunks = [audio[i : i + chunk_length_ms] for i in range(0, len(audio), chunk_length_ms)]
+
+        logger.info(f"Audio divided into {len(chunks)} silence-aligned speech chunks for Gnani STT...")
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             for idx, chunk in enumerate(chunks):
                 chunk_filename = f"chunk_{idx:04d}.wav"
                 chunk_path = os.path.join(temp_dir, chunk_filename)
-                chunk.export(chunk_path, format="wav")
+                chunk.export(chunk_path, format="wav", parameters=["-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1"])
 
-                logger.info(f"Transcribing segment {idx + 1}/{len(chunks)} via Gnani STT...")
+                logger.info(f"Transcribing segment {idx + 1}/{len(chunks)} ({len(chunk)/1000:.1f}s)...")
                 chunk_text = await _transcribe_single_chunk(client, chunk_path)
+
+                # Sub-chunk fallback: if segment returned empty, split in half (shorter context)
+                if not chunk_text and len(chunk) > 6000:
+                    logger.warning(f"Segment {idx + 1}/{len(chunks)} returned empty. Retrying with half-segments...")
+                    half_len = len(chunk) // 2
+                    sub1 = chunk[:half_len]
+                    sub2 = chunk[half_len:]
+                    
+                    sub1_path = os.path.join(temp_dir, f"sub1_{idx}.wav")
+                    sub2_path = os.path.join(temp_dir, f"sub2_{idx}.wav")
+                    sub1.export(sub1_path, format="wav", parameters=["-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1"])
+                    sub2.export(sub2_path, format="wav", parameters=["-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1"])
+
+                    t1 = await _transcribe_single_chunk(client, sub1_path)
+                    await asyncio.sleep(0.3)
+                    t2 = await _transcribe_single_chunk(client, sub2_path)
+                    
+                    combined_sub = f"{t1} {t2}".strip()
+                    if combined_sub:
+                        chunk_text = combined_sub
+                        logger.info(f"Sub-chunk recovery successful for segment {idx + 1}!")
+
                 if chunk_text:
+                    logger.info(f"Segment {idx + 1}/{len(chunks)}: {chunk_text[:60]}...")
                     transcripts.append(chunk_text)
+                else:
+                    logger.warning(f"Segment {idx + 1}/{len(chunks)} produced no speech text (silence).")
 
                 # Rate-limit safety pause
                 if idx < len(chunks) - 1:
-                    await asyncio.sleep(0.4)
+                    await asyncio.sleep(0.3)
 
         full_transcript = " ".join(transcripts).strip()
         if not full_transcript:

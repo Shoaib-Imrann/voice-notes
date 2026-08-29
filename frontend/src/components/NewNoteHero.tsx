@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/axios';
 import type { AudioNote } from '@/types/note';
@@ -26,6 +26,20 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Enter key trigger to process staged audio immediately
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && selectedFile && !isUploading) {
+        e.preventDefault();
+        handleUpload();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedFile, isUploading, title]);
 
   const allowedExtensions = [
     '.mp3',
@@ -166,11 +180,11 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
 
           {/* Minimal Feature Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
               <Mic className="h-3.5 w-3.5 text-neutral-500" />
               Gnani Speech-to-Text
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
               <Bot className="h-3.5 w-3.5 text-neutral-500" />
               Gemini AI Summary
             </span>
@@ -187,7 +201,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
-              className="text-red-400 hover:text-red-700"
+              className="text-red-400 hover:text-red-700 cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -232,7 +246,13 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             </p>
           </div>
         ) : (
-          <div className="text-left space-y-3.5">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleUpload();
+            }}
+            className="text-left space-y-3.5"
+          >
             {/* Selected File */}
             <div className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 p-3">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -255,7 +275,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
                     setSelectedFile(null);
                     setTitle('');
                   }}
-                  className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 transition"
+                  className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 transition cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -284,6 +304,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
                 <input
                   id="hero-note-title"
                   type="text"
+                  autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Note title (optional)..."
@@ -297,8 +318,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
               </div>
 
               <button
-                type="button"
-                onClick={handleUpload}
+                type="submit"
                 disabled={isUploading}
                 className="flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-neutral-800 disabled:opacity-50 cursor-pointer shrink-0"
               >
@@ -312,7 +332,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
                 )}
               </button>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </div>
