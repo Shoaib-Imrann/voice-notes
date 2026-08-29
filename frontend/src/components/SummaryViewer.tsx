@@ -84,7 +84,14 @@ ${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
     <div className="flex flex-col h-full space-y-3.5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xs overflow-y-auto">
       {/* Clean Header Bar matching Transcript */}
       <div className="flex items-center justify-between shrink-0">
-        <h3 className="text-lg font-bold text-neutral-900 tracking-tight">AI Summary</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-bold text-neutral-900 tracking-tight">AI Summary</h3>
+          {structured.model_used && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 border border-neutral-200 text-[10px] font-medium text-neutral-600">
+              {structured.model_used.replace(/^models\//, "")}
+            </span>
+          )}
+        </div>
 
         <button
           type="button"

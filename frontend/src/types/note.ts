@@ -11,6 +11,7 @@ export interface StructuredSummary {
   key_takeaways?: string[];
   action_items?: string[];
   topics?: string[];
+  model_used?: string;
 }
 
 export interface AudioNote {

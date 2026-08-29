@@ -45,12 +45,12 @@ Return ONLY a valid JSON object with the following schema:
             settings.GEMINI_MODEL or "gemini-3.6-flash",
             "gemini-3.6-flash",
             "gemini-3.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            "gemini-3.7-flash",
         ]
 
         response = None
         last_err = None
+        successful_model = None
 
         for model_name in candidate_models:
             try:
@@ -63,6 +63,7 @@ Return ONLY a valid JSON object with the following schema:
                     ),
                 )
                 if response and response.text:
+                    successful_model = model_name
                     logger.info(f"Gemini summary successfully generated using model '{model_name}'.")
                     break
             except Exception as err:
@@ -72,13 +73,15 @@ Return ONLY a valid JSON object with the following schema:
         if response and response.text:
             try:
                 structured_data = json.loads(response.text)
+                structured_data["model_used"] = successful_model or "gemini-3.6-flash"
                 return structured_data
             except json.JSONDecodeError:
                 return {
                     "executive_summary": response.text.strip(),
                     "key_takeaways": ["Overview generated"],
                     "action_items": [],
-                    "topics": []
+                    "topics": [],
+                    "model_used": successful_model or "gemini-3.6-flash",
                 }
                 
         raise ValueError(f"AI summarization failed across candidate models: {last_err}")

@@ -60,10 +60,10 @@ export default function ProcessingStatusBadge({
       case "UPLOADED":
         return "Audio uploaded";
       case "PROCESSING_ASR":
-        return "Transcribing audio with Gnani Vachana STT v3...";
+        return "Transcribing with Gnani Prisma ASR...";
       case "PROCESSING_LLM":
       case "SUMMARIZING":
-        return "Summarizing with Gemini 3.6 Flash...";
+        return "Generating summary with Gemini AI...";
       default:
         return "Processing...";
     }

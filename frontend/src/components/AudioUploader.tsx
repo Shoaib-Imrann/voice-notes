@@ -29,12 +29,16 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
     if (!allowedExtensions.includes(ext)) {
       setErrorMessage(`Unsupported format '${ext}'. Please upload MP3, WAV, M4A, OGG, or FLAC.`);
       toast.error("Unsupported file format");
+      setSelectedFile(null);
+      setTitle("");
       return;
     }
 
     if (file.size === 0) {
       setErrorMessage("The selected file is empty (0 bytes).");
       toast.error("Corrupted or empty file");
+      setSelectedFile(null);
+      setTitle("");
       return;
     }
 
@@ -45,13 +49,36 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
         )}MB) exceeds the maximum limit of 15MB.`,
       );
       toast.error("File size exceeds 15MB limit");
+      setSelectedFile(null);
+      setTitle("");
       return;
     }
 
-    setSelectedFile(file);
-    if (!title) {
+    // Inspect audio duration in browser before allowing selection
+    const objectUrl = URL.createObjectURL(file);
+    const tempAudio = new Audio(objectUrl);
+    tempAudio.onloadedmetadata = () => {
+      URL.revokeObjectURL(objectUrl);
+      if (tempAudio.duration > 600) {
+        // 10 minutes max
+        const mins = Math.floor(tempAudio.duration / 60);
+        const secs = Math.floor(tempAudio.duration % 60);
+        setErrorMessage(
+          `Audio duration (${mins}m ${secs}s) exceeds the maximum limit of 10 minutes.`,
+        );
+        toast.error("Audio exceeds 10-minute limit");
+        setSelectedFile(null);
+        setTitle("");
+      } else {
+        setSelectedFile(file);
+        setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
+      }
+    };
+    tempAudio.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setSelectedFile(file);
       setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
-    }
+    };
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -153,7 +180,10 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
           </div>
           <p className="text-xs font-semibold text-neutral-800">Click or drag audio file here</p>
           <p className="mt-0.5 text-[11px] text-neutral-500">
-            MP3, WAV, M4A, OGG, WEBM, AAC, FLAC (Max 15MB)
+            MP3, WAV, M4A, OGG, WEBM, AAC, FLAC
+          </p>
+          <p className="text-[10px] text-neutral-400 font-sans mt-0.5">
+            Max 10 mins • 15MB
           </p>
         </button>
       ) : (
@@ -175,7 +205,10 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
             {!isUploading && (
               <button
                 type="button"
-                onClick={() => setSelectedFile(null)}
+                onClick={() => {
+                  setSelectedFile(null);
+                  setTitle("");
+                }}
                 className="rounded-md p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
               >
                 <X className="h-3.5 w-3.5" />

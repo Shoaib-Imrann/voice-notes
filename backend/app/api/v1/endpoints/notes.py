@@ -100,7 +100,32 @@ async def upload_audio_note(
             detail=f"File exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB."
         )
 
-    # 3. Convert non-MP3/WAV audio to MP3 for universal web player playback (Safari/iOS/Chrome)
+    # 3. Strict Audio Duration & Stream Validation (Max 10 minutes - First Gate)
+    try:
+        from app.services.audio import get_audio_duration_and_validate
+        duration_secs = get_audio_duration_and_validate(file_path)
+    except ValueError as val_err:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(val_err)
+        )
+    except Exception as e:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid or corrupted audio file: {str(e)}"
+        )
+
+    # 4. Convert non-MP3/WAV audio to MP3 for universal web player playback (Safari/iOS/Chrome)
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in (".mp3", ".wav"):
         try:
@@ -121,7 +146,7 @@ async def upload_audio_note(
         except Exception as conv_err:
             logger.warning(f"Could not convert {ext} to mp3: {conv_err}. Keeping original file.")
 
-    # 4. Create Note Record in DB
+    # 5. Upload Valid Audio to Supabase Storage
     note_title = title.strip() if title and title.strip() else os.path.splitext(file.filename)[0]
     note_title = note_title[:40]
     note_slug = generate_slug(note_title, file_id)
@@ -129,14 +154,7 @@ async def upload_audio_note(
     supabase_file_url = await upload_to_supabase_storage(file_path, safe_filename)
     final_file_url = supabase_file_url or f"/static/uploads/{safe_filename}"
 
-    # Calculate audio duration immediately if possible so player has it right away
-    duration_secs = 0.0
-    try:
-        from app.services.audio import get_audio_duration_and_validate
-        duration_secs = get_audio_duration_and_validate(file_path)
-    except Exception as e:
-        logger.warning(f"Could not compute initial audio duration for {file_id}: {e}")
-
+    # 6. Create Note Record in DB (Only for Valid Audio <= 10 Minutes)
     new_note = AudioNote(
         id=file_id,
         slug=note_slug,
