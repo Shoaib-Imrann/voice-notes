@@ -40,3 +40,5 @@ uploads/*
 .idea/
 *.swp
 *.swo
+*.tsbuildinfo
+.pnpm-store/

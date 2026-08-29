@@ -1,8 +1,7 @@
-"use client";
+'use client';
 
-import type { NoteStatus } from "@/types/note";
-import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
-import React from "react";
+import { AlertCircle, Loader2, RotateCcw } from 'lucide-react';
+import type { NoteStatus } from '@/types/note';
 
 interface Props {
   status: NoteStatus;
@@ -19,19 +18,22 @@ export default function ProcessingStatusBadge({
   onRetry,
   isRetrying,
 }: Props) {
-  if (status === "COMPLETED") {
+  if (status === 'COMPLETED') {
     return null;
   }
 
-  if (status === "FAILED") {
+  if (status === 'FAILED') {
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-red-200 bg-red-50/80 text-xs text-red-700 font-sans shadow-xs">
         <div className="flex items-start gap-2.5 min-w-0">
           <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
           <div className="space-y-1 min-w-0">
-            <span className="font-semibold text-red-900 block text-xs">Processing Failed</span>
+            <span className="font-semibold text-red-900 block text-xs">
+              Processing Failed
+            </span>
             <p className="text-red-700 leading-relaxed break-words text-xs font-normal">
-              {errorMessage || "An unexpected error occurred during audio processing."}
+              {errorMessage ||
+                'An unexpected error occurred during audio processing.'}
             </p>
           </div>
         </div>
@@ -47,8 +49,12 @@ export default function ProcessingStatusBadge({
             ) : (
               <RotateCcw className="h-3.5 w-3.5" />
             )}
-            <span className="sm:hidden">{hasTranscript ? "Retry Summary" : "Retry Transcription"}</span>
-            <span className="hidden sm:inline">{hasTranscript ? "Retry Summary" : "Retry"}</span>
+            <span className="sm:hidden">
+              {hasTranscript ? 'Retry Summary' : 'Retry Transcription'}
+            </span>
+            <span className="hidden sm:inline">
+              {hasTranscript ? 'Retry Summary' : 'Retry'}
+            </span>
           </button>
         )}
       </div>
@@ -57,15 +63,15 @@ export default function ProcessingStatusBadge({
 
   const getStatusText = () => {
     switch (status) {
-      case "UPLOADED":
-        return "Audio uploaded";
-      case "PROCESSING_ASR":
-        return "Transcribing with Gnani Prisma ASR...";
-      case "PROCESSING_LLM":
-      case "SUMMARIZING":
-        return "Generating summary with Gemini AI...";
+      case 'UPLOADED':
+        return 'Audio uploaded';
+      case 'PROCESSING_ASR':
+        return 'Transcribing with Gnani Prisma ASR...';
+      case 'PROCESSING_LLM':
+      case 'SUMMARIZING':
+        return 'Generating summary with Gemini AI...';
       default:
-        return "Processing...";
+        return 'Processing...';
     }
   };
 

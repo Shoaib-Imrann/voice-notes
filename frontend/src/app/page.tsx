@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import AudioPlayer from "@/components/AudioPlayer";
-import Navbar from "@/components/Navbar";
-import NewNoteHero from "@/components/NewNoteHero";
-import NotesHistory from "@/components/NotesHistory";
-import ProcessingStatusBadge from "@/components/ProcessingStatusBadge";
-import SummaryViewer from "@/components/SummaryViewer";
-import TranscriptViewer from "@/components/TranscriptViewer";
-import { apiClient } from "@/lib/axios";
-import type { AudioNote } from "@/types/note";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, PanelLeftOpen, Plus, RotateCw } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import React, { Suspense, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, PanelLeftOpen, Plus, RotateCw } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import AudioPlayer from '@/components/AudioPlayer';
+import Navbar from '@/components/Navbar';
+import NewNoteHero from '@/components/NewNoteHero';
+import NotesHistory from '@/components/NotesHistory';
+import ProcessingStatusBadge from '@/components/ProcessingStatusBadge';
+import SummaryViewer from '@/components/SummaryViewer';
+import TranscriptViewer from '@/components/TranscriptViewer';
+import { apiClient } from '@/lib/axios';
+import type { AudioNote } from '@/types/note';
 
 function NoteWorkspaceSkeleton() {
   return (
@@ -80,10 +80,15 @@ function DashboardContent() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const urlSlugOrId =
-    searchParams.get("slug") || searchParams.get("note") || searchParams.get("noteId") || undefined;
+    searchParams.get('slug') ||
+    searchParams.get('note') ||
+    searchParams.get('noteId') ||
+    undefined;
 
   const [isMounted, setIsMounted] = useState(false);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>(urlSlugOrId);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>(
+    urlSlugOrId
+  );
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
   const notifiedStatusRef = useRef<Record<string, string>>({});
@@ -98,34 +103,35 @@ function DashboardContent() {
   // Handle client mount hydration, localStorage fallback, and mobile initial state
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== "undefined" && window.innerWidth < 640) {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
       setIsSidebarOpen(false);
     }
-    if (!urlSlugOrId && typeof window !== "undefined") {
+    if (!urlSlugOrId && typeof window !== 'undefined') {
       const storedSlugOrId =
-        localStorage.getItem("lastSelectedNoteSlug") || localStorage.getItem("lastSelectedNoteId");
+        localStorage.getItem('lastSelectedNoteSlug') ||
+        localStorage.getItem('lastSelectedNoteId');
       if (storedSlugOrId) {
         setSelectedNoteId(storedSlugOrId);
         const newUrl = `${window.location.pathname}?slug=${storedSlugOrId}`;
-        window.history.replaceState(null, "", newUrl);
+        window.history.replaceState(null, '', newUrl);
       }
     }
   }, [urlSlugOrId]);
 
   // Lock background touch and scrolling on mobile when sidebar is open
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       if (isSidebarOpen && window.innerWidth < 640) {
-        document.body.style.overflow = "hidden";
-        document.body.style.touchAction = "none";
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
       } else {
-        document.body.style.overflow = "";
-        document.body.style.touchAction = "";
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
       }
     }
     return () => {
-      document.body.style.overflow = "";
-      document.body.style.touchAction = "";
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     };
   }, [isSidebarOpen]);
 
@@ -136,9 +142,9 @@ function DashboardContent() {
     isError: isErrorNotes,
     refetch: refetchNotes,
   } = useQuery<AudioNote[]>({
-    queryKey: ["notes"],
+    queryKey: ['notes'],
     queryFn: async () => {
-      const res = await apiClient.get<AudioNote[]>("/notes");
+      const res = await apiClient.get<AudioNote[]>('/notes');
       return res.data;
     },
   });
@@ -150,7 +156,7 @@ function DashboardContent() {
     isError: isErrorSelectedNote,
     refetch: refetchSelectedNote,
   } = useQuery<AudioNote>({
-    queryKey: ["note", selectedNoteId],
+    queryKey: ['note', selectedNoteId],
     queryFn: async () => {
       if (!selectedNoteId) return null as any;
       const res = await apiClient.get<AudioNote>(`/notes/${selectedNoteId}`);
@@ -159,7 +165,7 @@ function DashboardContent() {
     enabled: !!selectedNoteId,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      if (status && status !== "COMPLETED" && status !== "FAILED") {
+      if (status && status !== 'COMPLETED' && status !== 'FAILED') {
         return 2000; // Poll every 2 seconds while processing ASR/LLM
       }
       return false;
@@ -169,22 +175,22 @@ function DashboardContent() {
   // Helper to update selectedNoteId and sync with localStorage and URL using slug
   const updateSelectedNoteId = (noteOrIdentifier?: AudioNote | string) => {
     let identifier: string | undefined;
-    if (typeof noteOrIdentifier === "string") {
+    if (typeof noteOrIdentifier === 'string') {
       identifier = noteOrIdentifier;
     } else if (noteOrIdentifier) {
       identifier = noteOrIdentifier.slug || noteOrIdentifier.id;
     }
 
     setSelectedNoteId(identifier);
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       if (identifier) {
-        localStorage.setItem("lastSelectedNoteSlug", identifier);
+        localStorage.setItem('lastSelectedNoteSlug', identifier);
         const newUrl = `${window.location.pathname}?slug=${identifier}`;
-        window.history.replaceState(null, "", newUrl);
+        window.history.replaceState(null, '', newUrl);
       } else {
-        localStorage.removeItem("lastSelectedNoteSlug");
-        localStorage.removeItem("lastSelectedNoteId");
-        window.history.replaceState(null, "", window.location.pathname);
+        localStorage.removeItem('lastSelectedNoteSlug');
+        localStorage.removeItem('lastSelectedNoteId');
+        window.history.replaceState(null, '', window.location.pathname);
       }
     }
   };
@@ -204,22 +210,27 @@ function DashboardContent() {
     if (prevStatus !== currentStatus) {
       notifiedStatusRef.current[noteId] = currentStatus;
 
-      if (currentStatus === "COMPLETED") {
-        toast.success("AI Summarization completed successfully!");
-        queryClient.invalidateQueries({ queryKey: ["notes"] });
-      } else if (currentStatus === "FAILED") {
-        toast.error(`Processing failed: ${selectedNote.error_message || "Unknown error"}`);
-        queryClient.invalidateQueries({ queryKey: ["notes"] });
+      if (currentStatus === 'COMPLETED') {
+        toast.success('AI Summarization completed successfully!');
+        queryClient.invalidateQueries({ queryKey: ['notes'] });
+      } else if (currentStatus === 'FAILED') {
+        toast.error(
+          `Processing failed: ${selectedNote.error_message || 'Unknown error'}`
+        );
+        queryClient.invalidateQueries({ queryKey: ['notes'] });
       }
     }
   }, [selectedNote, queryClient]);
 
-  const [noteToDelete, setNoteToDelete] = useState<{ id: string; title?: string } | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<{
+    id: string;
+    title?: string;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleUploadSuccess = (newNote: AudioNote) => {
     updateSelectedNoteId(newNote);
-    queryClient.invalidateQueries({ queryKey: ["notes"] });
+    queryClient.invalidateQueries({ queryKey: ['notes'] });
   };
 
   const handleNewNote = () => {
@@ -236,7 +247,7 @@ function DashboardContent() {
     const noteId = noteToDelete.id;
     try {
       await apiClient.delete(`/notes/${noteId}`);
-      toast.success("Note deleted");
+      toast.success('Note deleted');
 
       if (
         selectedNote?.id === noteId ||
@@ -246,10 +257,10 @@ function DashboardContent() {
         updateSelectedNoteId(undefined);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
       setNoteToDelete(null);
     } catch (_err) {
-      toast.error("Failed to delete note");
+      toast.error('Failed to delete note');
     } finally {
       setIsDeleting(false);
     }
@@ -259,11 +270,11 @@ function DashboardContent() {
     setIsRetrying(true);
     try {
       await apiClient.post(`/notes/${noteId}/retry`);
-      toast.success("Retrying note processing...");
-      queryClient.invalidateQueries({ queryKey: ["note", selectedNoteId] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.success('Retrying note processing...');
+      queryClient.invalidateQueries({ queryKey: ['note', selectedNoteId] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     } catch (err: any) {
-      const msg = err.response?.data?.detail || "Failed to retry note";
+      const msg = err.response?.data?.detail || 'Failed to retry note';
       toast.error(msg);
     } finally {
       setIsRetrying(false);
@@ -272,10 +283,11 @@ function DashboardContent() {
 
   // Audio stream URL resolver
   const getAudioFullUrl = (urlPath: string) => {
-    if (!urlPath) return "";
-    if (urlPath.startsWith("http")) return urlPath;
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-    return `${base.replace(/\/api\/v1\/?$/, "")}${urlPath}`;
+    if (!urlPath) return '';
+    if (urlPath.startsWith('http')) return urlPath;
+    const base =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+    return `${base.replace(/\/api\/v1\/?$/, '')}${urlPath}`;
   };
 
   const activeNote = selectedNote;
@@ -286,8 +298,8 @@ function DashboardContent() {
       <aside
         className={`h-[100dvh] max-h-[100dvh] border-r border-neutral-800/80 bg-[#171717] transition-all duration-200 z-30 shrink-0 ${
           isSidebarOpen
-            ? "fixed inset-y-0 left-0 w-80 max-w-[85vw] sm:static sm:w-64 sm:max-w-none shadow-2xl sm:shadow-none"
-            : "hidden sm:flex sm:w-14"
+            ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] sm:static sm:w-64 sm:max-w-none shadow-2xl sm:shadow-none'
+            : 'hidden sm:flex sm:w-14'
         }`}
       >
         {isSidebarOpen ? (
@@ -297,13 +309,13 @@ function DashboardContent() {
               selectedNoteId={selectedNote?.id || selectedNoteId}
               onSelectNote={(note) => {
                 updateSelectedNoteId(note);
-                if (typeof window !== "undefined" && window.innerWidth < 640) {
+                if (typeof window !== 'undefined' && window.innerWidth < 640) {
                   setIsSidebarOpen(false);
                 }
               }}
               onNewNote={() => {
                 handleNewNote();
-                if (typeof window !== "undefined" && window.innerWidth < 640) {
+                if (typeof window !== 'undefined' && window.innerWidth < 640) {
                   setIsSidebarOpen(false);
                 }
               }}
@@ -342,7 +354,7 @@ function DashboardContent() {
         <div
           onClick={() => setIsSidebarOpen(false)}
           onKeyDown={(e) => {
-            if (e.key === "Escape") setIsSidebarOpen(false);
+            if (e.key === 'Escape') setIsSidebarOpen(false);
           }}
           role="button"
           tabIndex={0}
@@ -371,7 +383,9 @@ function DashboardContent() {
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600 mx-auto">
                   <AlertTriangle className="h-5 w-5" />
                 </div>
-                <h2 className="text-base font-semibold text-neutral-900">Server Offline or Unreachable</h2>
+                <h2 className="text-base font-semibold text-neutral-900">
+                  Server Offline or Unreachable
+                </h2>
                 <p className="text-xs text-neutral-500 leading-relaxed font-sans">
                   The service might be starting up (cold start) or offline.
                 </p>
@@ -412,7 +426,7 @@ function DashboardContent() {
                   {/* Left Column: Async Loader -> Audio File -> AI Summary */}
                   <div className="lg:col-span-7 flex flex-col space-y-4 lg:h-full lg:overflow-hidden pr-0 lg:pr-1">
                     {/* 1. Async Status Loader Badge (Only shown while processing or on error) */}
-                    {activeNote.status !== "COMPLETED" && (
+                    {activeNote.status !== 'COMPLETED' && (
                       <div className="shrink-0">
                         <ProcessingStatusBadge
                           status={activeNote.status}
@@ -431,7 +445,9 @@ function DashboardContent() {
                         title={activeNote.title}
                         createdAt={activeNote.created_at}
                         fileSizeBytes={activeNote.file_size_bytes}
-                        onDelete={() => promptDeleteNote(activeNote.id, activeNote.title)}
+                        onDelete={() =>
+                          promptDeleteNote(activeNote.id, activeNote.title)
+                        }
                       />
                     </div>
 
@@ -466,7 +482,7 @@ function DashboardContent() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs transition-opacity select-none"
           onClick={() => !isDeleting && setNoteToDelete(null)}
           onKeyDown={(e) => {
-            if (e.key === "Escape" && !isDeleting) setNoteToDelete(null);
+            if (e.key === 'Escape' && !isDeleting) setNoteToDelete(null);
           }}
           role="button"
           tabIndex={0}
@@ -478,11 +494,13 @@ function DashboardContent() {
             onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="space-y-1.5">
-              <h3 className="text-sm font-bold text-neutral-900">Delete note?</h3>
+              <h3 className="text-sm font-bold text-neutral-900">
+                Delete note?
+              </h3>
               <p className="text-xs text-neutral-500 leading-relaxed">
-                Are you sure you want to delete{" "}
+                Are you sure you want to delete{' '}
                 <span className="font-semibold text-neutral-800 break-words">
-                  “{noteToDelete.title || "this note"}”
+                  “{noteToDelete.title || 'this note'}”
                 </span>
                 ? This action cannot be undone.
               </p>
@@ -503,7 +521,7 @@ function DashboardContent() {
                 onClick={confirmDeleteNote}
                 className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-red-600 hover:bg-red-700 text-white transition cursor-pointer shadow-xs disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

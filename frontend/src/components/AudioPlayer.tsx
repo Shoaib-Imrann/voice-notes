@@ -1,8 +1,16 @@
-"use client";
+'use client';
 
-import { Pause, Play, RotateCcw, RotateCw, Trash2, Volume2, VolumeX } from "lucide-react";
-import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import {
+  Pause,
+  Play,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   audioUrl: string;
@@ -33,21 +41,23 @@ export default function AudioPlayer({
   const rates = [1, 1.25, 1.5, 2];
 
   const formatTime = (secs: number) => {
-    if (Number.isNaN(secs) || secs < 0) return "00:00";
+    if (Number.isNaN(secs) || secs < 0) return '00:00';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const formattedDate = createdAt
-    ? new Date(createdAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+    ? new Date(createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       })
     : null;
 
-  const formattedSize = fileSizeBytes ? `${(fileSizeBytes / (1024 * 1024)).toFixed(2)} MB` : null;
+  const formattedSize = fileSizeBytes
+    ? `${(fileSizeBytes / (1024 * 1024)).toFixed(2)} MB`
+    : null;
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -84,7 +94,10 @@ export default function AudioPlayer({
 
   const skipSeconds = (secs: number) => {
     if (!audioRef.current) return;
-    const target = Math.min(Math.max(0, audioRef.current.currentTime + secs), duration);
+    const target = Math.min(
+      Math.max(0, audioRef.current.currentTime + secs),
+      duration
+    );
     audioRef.current.currentTime = target;
     setCurrentTime(target);
     onTimeUpdate?.(target);
@@ -116,7 +129,6 @@ export default function AudioPlayer({
     }
   }, [seekToTime]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Reset playing state on audioUrl change
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
@@ -191,7 +203,11 @@ export default function AudioPlayer({
             onClick={togglePlay}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-sm transition hover:bg-neutral-800 cursor-pointer"
           >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+            {isPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4 ml-0.5" />
+            )}
           </button>
 
           <button
@@ -228,7 +244,11 @@ export default function AudioPlayer({
             onClick={toggleMute}
             className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
           >
-            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            {isMuted ? (
+              <VolumeX className="h-4 w-4" />
+            ) : (
+              <Volume2 className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>

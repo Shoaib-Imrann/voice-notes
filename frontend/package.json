@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbopack",
+    "build": "biome check . && next build",
     "start": "next start",
     "lint": "biome check .",
-    "format": "biome format --write ."
+    "lint:fix": "biome check . --write",
+    "lint:fix-unsafe": "biome check . --write --unsafe",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.28.9",
@@ -21,7 +23,7 @@
     "tailwind-merge": "^2.2.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.6.4",
+    "@biomejs/biome": "2.5.11",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.67",
     "@types/react-dom": "^18.2.22",

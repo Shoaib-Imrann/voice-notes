@@ -1,10 +1,10 @@
 export type NoteStatus =
-  | "UPLOADED"
-  | "PROCESSING_ASR"
-  | "SUMMARIZING"
-  | "PROCESSING_LLM"
-  | "COMPLETED"
-  | "FAILED";
+  | 'UPLOADED'
+  | 'PROCESSING_ASR'
+  | 'SUMMARIZING'
+  | 'PROCESSING_LLM'
+  | 'COMPLETED'
+  | 'FAILED';
 
 export interface StructuredSummary {
   executive_summary?: string;

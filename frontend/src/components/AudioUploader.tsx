@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
-import { apiClient } from "@/lib/axios";
-import type { AudioNote } from "@/types/note";
-import { AlertTriangle, FileAudio, Loader2, UploadCloud, X } from "lucide-react";
-import type React from "react";
-import { useRef, useState } from "react";
-import { toast } from "sonner";
+import {
+  AlertTriangle,
+  FileAudio,
+  Loader2,
+  UploadCloud,
+  X,
+} from 'lucide-react';
+import type React from 'react';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { apiClient } from '@/lib/axios';
+import type { AudioNote } from '@/types/note';
 
 interface Props {
   onUploadSuccess: (note: AudioNote) => void;
@@ -13,44 +19,54 @@ interface Props {
 
 export default function AudioUploader({ onUploadSuccess }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedExtensions = [".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac", ".webm"];
+  const allowedExtensions = [
+    '.mp3',
+    '.wav',
+    '.m4a',
+    '.ogg',
+    '.flac',
+    '.aac',
+    '.webm',
+  ];
   const maxSizeBytes = 15 * 1024 * 1024; // 15MB limit
 
   const handleFileSelect = (file: File) => {
     setErrorMessage(null);
-    const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
+    const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
 
     if (!allowedExtensions.includes(ext)) {
-      setErrorMessage(`Unsupported format '${ext}'. Please upload MP3, WAV, M4A, OGG, or FLAC.`);
-      toast.error("Unsupported file format");
+      setErrorMessage(
+        `Unsupported format '${ext}'. Please upload MP3, WAV, M4A, OGG, or FLAC.`
+      );
+      toast.error('Unsupported file format');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
     if (file.size === 0) {
-      setErrorMessage("The selected file is empty (0 bytes).");
-      toast.error("Corrupted or empty file");
+      setErrorMessage('The selected file is empty (0 bytes).');
+      toast.error('Corrupted or empty file');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
     if (file.size > maxSizeBytes) {
       setErrorMessage(
         `File size (${(file.size / (1024 * 1024)).toFixed(
-          1,
-        )}MB) exceeds the maximum limit of 15MB.`,
+          1
+        )}MB) exceeds the maximum limit of 15MB.`
       );
-      toast.error("File size exceeds 15MB limit");
+      toast.error('File size exceeds 15MB limit');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
@@ -64,20 +80,20 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
         const mins = Math.floor(tempAudio.duration / 60);
         const secs = Math.floor(tempAudio.duration % 60);
         setErrorMessage(
-          `Audio duration (${mins}m ${secs}s) exceeds the maximum limit of 10 minutes.`,
+          `Audio duration (${mins}m ${secs}s) exceeds the maximum limit of 10 minutes.`
         );
-        toast.error("Audio exceeds 10-minute limit");
+        toast.error('Audio exceeds 10-minute limit');
         setSelectedFile(null);
-        setTitle("");
+        setTitle('');
       } else {
         setSelectedFile(file);
-        setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
+        setTitle(file.name.replace(/\.[^/.]+$/, '').slice(0, 40));
       }
     };
     tempAudio.onerror = () => {
       URL.revokeObjectURL(objectUrl);
       setSelectedFile(file);
-      setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
+      setTitle(file.name.replace(/\.[^/.]+$/, '').slice(0, 40));
     };
   };
 
@@ -100,32 +116,41 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
     setErrorMessage(null);
 
     const formData = new FormData();
-    formData.append("file", selectedFile);
+    formData.append('file', selectedFile);
     if (title.trim()) {
-      formData.append("title", title.trim());
+      formData.append('title', title.trim());
     }
 
     try {
-      const response = await apiClient.post<AudioNote>("/notes/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 180000,
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percent);
-          }
-        },
-      });
+      const response = await apiClient.post<AudioNote>(
+        '/notes/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 180000,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percent);
+            }
+          },
+        }
+      );
 
       onUploadSuccess(response.data);
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       setUploadProgress(0);
     } catch (err: any) {
-      console.error("Upload error:", err);
-      const msg = err.response?.data?.detail || err.message || "Failed to upload audio file.";
+      console.error('Upload error:', err);
+      const msg =
+        err.response?.data?.detail ||
+        err.message ||
+        'Failed to upload audio file.';
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -140,7 +165,9 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
           <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
             New Upload
           </h2>
-          <p className="text-[11px] text-neutral-500">Transcribe audio via Gnani STT & Gemini</p>
+          <p className="text-[11px] text-neutral-500">
+            Transcribe audio via Gnani STT & Gemini
+          </p>
         </div>
       </div>
 
@@ -149,7 +176,9 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
           <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
           <div className="flex-1 min-w-0">
             <span className="font-semibold text-red-900">Upload Failed</span>
-            <p className="mt-0.5 font-sans text-[11px] text-red-600 truncate">{errorMessage}</p>
+            <p className="mt-0.5 font-sans text-[11px] text-red-600 truncate">
+              {errorMessage}
+            </p>
           </div>
           <button
             type="button"
@@ -174,12 +203,16 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
             type="file"
             accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+            onChange={(e) =>
+              e.target.files?.[0] && handleFileSelect(e.target.files[0])
+            }
           />
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-200 text-neutral-700 mb-2">
             <UploadCloud className="h-4 w-4" />
           </div>
-          <p className="text-xs font-semibold text-neutral-800">Click or drag audio file here</p>
+          <p className="text-xs font-semibold text-neutral-800">
+            Click or drag audio file here
+          </p>
           <p className="mt-0.5 text-[11px] text-neutral-500">
             MP3, WAV, M4A, OGG, WEBM, AAC, FLAC
           </p>
@@ -208,7 +241,7 @@ export default function AudioUploader({ onUploadSuccess }: Props) {
                 type="button"
                 onClick={() => {
                   setSelectedFile(null);
-                  setTitle("");
+                  setTitle('');
                 }}
                 className="rounded-md p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
               >

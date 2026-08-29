@@ -1,8 +1,15 @@
-"use client";
+'use client';
 
-import type { AudioNote } from "@/types/note";
-import { AlertTriangle, FileAudio, PanelLeftClose, Plus, RotateCw, Trash2 } from "lucide-react";
-import React, { useMemo } from "react";
+import {
+  AlertTriangle,
+  FileAudio,
+  PanelLeftClose,
+  Plus,
+  RotateCw,
+  Trash2,
+} from 'lucide-react';
+import { useMemo } from 'react';
+import type { AudioNote } from '@/types/note';
 
 interface Props {
   notes: AudioNote[];
@@ -30,14 +37,18 @@ export default function NotesHistory({
   // Group notes by relative time (Today, Yesterday, Previous 7 Days, Older)
   const groupedNotes = useMemo(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const today = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    ).getTime();
     const yesterday = today - 86400000;
     const sevenDaysAgo = today - 7 * 86400000;
 
     const groups: { [key: string]: AudioNote[] } = {
       Today: [],
       Yesterday: [],
-      "Previous 7 Days": [],
+      'Previous 7 Days': [],
       Older: [],
     };
 
@@ -48,7 +59,7 @@ export default function NotesHistory({
       } else if (createdTime >= yesterday) {
         groups.Yesterday.push(note);
       } else if (createdTime >= sevenDaysAgo) {
-        groups["Previous 7 Days"].push(note);
+        groups['Previous 7 Days'].push(note);
       } else {
         groups.Older.push(note);
       }
@@ -58,7 +69,7 @@ export default function NotesHistory({
   }, [notes]);
 
   const formatDuration = (secs?: number) => {
-    if (!secs || secs <= 0) return "";
+    if (!secs || secs <= 0) return '';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     if (m > 0) return `${m}m ${s}s`;
@@ -125,7 +136,9 @@ export default function NotesHistory({
             </button>
           </div>
         ) : notes.length === 0 ? (
-          <div className="py-8 text-center text-xs text-neutral-500">No recordings yet.</div>
+          <div className="py-8 text-center text-xs text-neutral-500">
+            No recordings yet.
+          </div>
         ) : (
           Object.entries(groupedNotes).map(([groupTitle, groupNotes]) => {
             if (groupNotes.length === 0) return null;
@@ -137,7 +150,8 @@ export default function NotesHistory({
                 </div>
                 {groupNotes.map((note) => {
                   const isSelected =
-                    note.id === selectedNoteId || (note.slug && note.slug === selectedNoteId);
+                    note.id === selectedNoteId ||
+                    (note.slug && note.slug === selectedNoteId);
                   const duration = formatDuration(note.duration_seconds);
 
                   return (
@@ -145,7 +159,7 @@ export default function NotesHistory({
                       key={note.id}
                       onClick={() => onSelectNote(note)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
+                        if (e.key === 'Enter' || e.key === ' ') {
                           onSelectNote(note);
                         }
                       }}
@@ -153,20 +167,22 @@ export default function NotesHistory({
                       tabIndex={0}
                       className={`group flex items-center justify-between rounded-xl px-2.5 py-2 cursor-pointer transition text-xs ${
                         isSelected
-                          ? "bg-neutral-800 text-white font-medium shadow-xs"
-                          : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
+                          ? 'bg-neutral-800 text-white font-medium shadow-xs'
+                          : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 pr-1">
                         <FileAudio
                           className={`h-4 w-4 shrink-0 ${
                             isSelected
-                              ? "text-white"
-                              : "text-neutral-500 group-hover:text-neutral-300"
+                              ? 'text-white'
+                              : 'text-neutral-500 group-hover:text-neutral-300'
                           }`}
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-medium leading-tight">{note.title}</p>
+                          <p className="truncate text-xs font-medium leading-tight">
+                            {note.title}
+                          </p>
                           {duration && (
                             <span className="text-[10px] text-neutral-500 font-sans">
                               {duration}

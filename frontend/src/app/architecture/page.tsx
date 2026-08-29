@@ -1,8 +1,7 @@
-"use client";
+'use client';
 
-import Navbar from "@/components/Navbar";
-import { Github, ArrowUpRight } from "lucide-react";
-import React from "react";
+import { ArrowUpRight, Github } from 'lucide-react';
+import Navbar from '@/components/Navbar';
 
 export default function ArchitecturePage() {
   return (
@@ -33,48 +32,72 @@ export default function ArchitecturePage() {
         <div className="w-full px-4 sm:px-8 lg:px-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full">
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 1</span>
-              <h3 className="text-xs font-semibold text-neutral-900">Validation</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 1
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                Validation
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 Checks format, size (&lt;15MB), and duration (&lt;10 min).
               </p>
             </div>
 
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 2</span>
-              <h3 className="text-xs font-semibold text-neutral-900">Storage & DB</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 2
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                Storage & DB
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 Uploads to Supabase Storage & saves row in PostgreSQL.
               </p>
             </div>
 
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 3</span>
-              <h3 className="text-xs font-semibold text-neutral-900">25s Slicing</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 3
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                25s Slicing
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 FFmpeg splits audio into 25-second WAV segments.
               </p>
             </div>
 
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 4</span>
-              <h3 className="text-xs font-semibold text-neutral-900">Gnani STT</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 4
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                Gnani STT
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 Sends chunks to Gnani STT & stitches the transcript.
               </p>
             </div>
 
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 5</span>
-              <h3 className="text-xs font-semibold text-neutral-900">Gemini AI</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 5
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                Gemini AI
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 Generates overview and key takeaways from transcript.
               </p>
             </div>
 
             <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 6</span>
-              <h3 className="text-xs font-semibold text-neutral-900">Cleanup</h3>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Step 6
+              </span>
+              <h3 className="text-xs font-semibold text-neutral-900">
+                Cleanup
+              </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
                 Marks note completed & deletes temp files from disk.
               </p>
@@ -84,15 +107,20 @@ export default function ArchitecturePage() {
 
         {/* Core Sections (Centered readable column) */}
         <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8 text-sm text-neutral-600 leading-relaxed">
-
           {/* Section 2: Long Audio */}
           <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">Long-Audio Handling</h2>
+            <h2 className="text-base font-semibold text-neutral-900">
+              Long-Audio Handling
+            </h2>
             <p>
-              To transcribe audio files longer than 25 seconds, the backend splits the audio into 25-second WAV segments using FFmpeg and PyDub.
+              To transcribe audio files longer than 25 seconds, the backend
+              splits the audio into 25-second WAV segments using FFmpeg and
+              PyDub.
             </p>
             <p>
-              Each 25-second chunk is sent to Gnani STT one by one. The server then stitches all the returned text pieces together into one complete, formatted transcript.
+              Each 25-second chunk is sent to Gnani STT one by one. The server
+              then stitches all the returned text pieces together into one
+              complete, formatted transcript.
             </p>
           </section>
 
@@ -103,26 +131,38 @@ export default function ArchitecturePage() {
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Synchronous:</strong> Checks file format and duration (under 10 minutes), uploads the audio file to Supabase Storage, creates the database record, and immediately returns HTTP 201.
+                <strong className="text-neutral-900">Synchronous:</strong>{' '}
+                Checks file format and duration (under 10 minutes), uploads the
+                audio file to Supabase Storage, creates the database record, and
+                immediately returns HTTP 201.
               </li>
               <li>
-                <strong className="text-neutral-900">Background Tasks:</strong> A background worker handles the heavy operations: audio slicing, Gnani STT calls, Gemini AI summarization, and disk cleanup.
+                <strong className="text-neutral-900">Background Tasks:</strong>{' '}
+                A background worker handles the heavy operations: audio slicing,
+                Gnani STT calls, Gemini AI summarization, and disk cleanup.
               </li>
             </ul>
           </section>
 
           {/* Section 3: Storage */}
           <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">Storage</h2>
+            <h2 className="text-base font-semibold text-neutral-900">
+              Storage
+            </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Audio Files:</strong> Stored permanently in a public Supabase Storage bucket.
+                <strong className="text-neutral-900">Audio Files:</strong>{' '}
+                Stored permanently in a public Supabase Storage bucket.
               </li>
               <li>
-                <strong className="text-neutral-900">Database:</strong> Note details, transcripts, and AI summaries are saved in Supabase PostgreSQL.
+                <strong className="text-neutral-900">Database:</strong> Note
+                details, transcripts, and AI summaries are saved in Supabase
+                PostgreSQL.
               </li>
               <li>
-                <strong className="text-neutral-900">Server Disk:</strong> Audio files are only stored temporarily on the server while actively processing, and deleted immediately after.
+                <strong className="text-neutral-900">Server Disk:</strong> Audio
+                files are only stored temporarily on the server while actively
+                processing, and deleted immediately after.
               </li>
             </ul>
           </section>
@@ -134,38 +174,67 @@ export default function ArchitecturePage() {
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Client Disconnects:</strong> Processing runs server-side independently once uploaded, persisting state regardless of client network status.
+                <strong className="text-neutral-900">
+                  Client Disconnects:
+                </strong>{' '}
+                Processing runs server-side independently once uploaded,
+                persisting state regardless of client network status.
               </li>
               <li>
-                <strong className="text-neutral-900">Validation:</strong> Files over 10 minutes or corrupted audio are rejected immediately before database insertion.
+                <strong className="text-neutral-900">Validation:</strong> Files
+                over 10 minutes or corrupted audio are rejected immediately
+                before database insertion.
               </li>
               <li>
-                <strong className="text-neutral-900">Error Visibility:</strong> API timeouts or failures are captured and displayed with a Retry option.
+                <strong className="text-neutral-900">Error Visibility:</strong>{' '}
+                API timeouts or failures are captured and displayed with a Retry
+                option.
               </li>
               <li>
-                <strong className="text-neutral-900">Isolated Retry:</strong> If transcription succeeded but summarization failed, Retry only re-runs the LLM call.
+                <strong className="text-neutral-900">Isolated Retry:</strong> If
+                transcription succeeded but summarization failed, Retry only
+                re-runs the LLM call.
               </li>
             </ul>
           </section>
 
           {/* Section 5: What I Would Improve */}
           <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">What I Would Improve</h2>
+            <h2 className="text-base font-semibold text-neutral-900">
+              What I Would Improve
+            </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Silence-Based Chunking:</strong> Split audio during natural breath pauses rather than fixed 25-second intervals to prevent words from getting cut in half.
+                <strong className="text-neutral-900">
+                  Silence-Based Chunking:
+                </strong>{' '}
+                Split audio during natural breath pauses rather than fixed
+                25-second intervals to prevent words from getting cut in half.
               </li>
               <li>
-                <strong className="text-neutral-900">Semantic Search:</strong> Search past notes by meaning and topic (e.g. searching "pricing" finds notes discussing "costs and budget") rather than only exact keyword matches.
+                <strong className="text-neutral-900">Semantic Search:</strong>{' '}
+                Search past notes by meaning and topic (e.g. searching "pricing"
+                finds notes discussing "costs and budget") rather than only
+                exact keyword matches.
               </li>
               <li>
-                <strong className="text-neutral-900">WebSockets:</strong> Replace 2-second HTTP polling with real-time push events for instant status updates.
+                <strong className="text-neutral-900">WebSockets:</strong>{' '}
+                Replace 2-second HTTP polling with real-time push events for
+                instant status updates.
               </li>
               <li>
-                <strong className="text-neutral-900">Task Queue (Celery + Redis):</strong> Move background processing to dedicated worker nodes for high-volume traffic.
+                <strong className="text-neutral-900">
+                  Task Queue (Celery + Redis):
+                </strong>{' '}
+                Move background processing to dedicated worker nodes for
+                high-volume traffic.
               </li>
               <li>
-                <strong className="text-neutral-900">Indic Language Support:</strong> Add language selection so users can transcribe in Hindi, Kannada, Tamil, or Telugu using Gnani's multilingual models.
+                <strong className="text-neutral-900">
+                  Indic Language Support:
+                </strong>{' '}
+                Add language selection so users can transcribe in Hindi,
+                Kannada, Tamil, or Telugu using Gnani's multilingual models.
               </li>
             </ul>
           </section>

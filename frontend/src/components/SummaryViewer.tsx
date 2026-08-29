@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { StructuredSummary } from "@/types/note";
-import { Check, Copy } from "lucide-react";
-import React, { useState } from "react";
-import { toast } from "sonner";
+import { Check, Copy } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import type { StructuredSummary } from '@/types/note';
 
 interface Props {
   summary?: StructuredSummary | string | null;
@@ -11,19 +11,35 @@ interface Props {
   errorMessage?: string | null;
 }
 
-export default function SummaryViewer({ summary, status, errorMessage }: Props) {
+export default function SummaryViewer({
+  summary,
+  status,
+  errorMessage: _errorMessage,
+}: Props) {
   const [copied, setCopied] = useState(false);
 
   if (!summary) {
-    if (status === "FAILED") {
+    if (status === 'FAILED') {
       return (
         <div className="flex flex-col items-center justify-center h-full rounded-2xl border border-neutral-200 bg-neutral-50/50 p-8 text-center space-y-2 select-none">
           <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 mb-1">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
           </div>
-          <h3 className="text-xs font-semibold text-neutral-800">No Summary Available</h3>
+          <h3 className="text-xs font-semibold text-neutral-800">
+            No Summary Available
+          </h3>
           <p className="text-[11px] text-neutral-500 max-w-xs leading-relaxed">
             AI summarization requires a completed audio transcription.
           </p>
@@ -52,7 +68,7 @@ export default function SummaryViewer({ summary, status, errorMessage }: Props) 
   }
 
   let structured: StructuredSummary = {};
-  if (typeof summary === "string") {
+  if (typeof summary === 'string') {
     try {
       structured = JSON.parse(summary);
     } catch {
@@ -65,18 +81,18 @@ export default function SummaryViewer({ summary, status, errorMessage }: Props) 
   const handleCopy = () => {
     const textToCopy = `
 SUMMARY:
-${structured.executive_summary || "N/A"}
+${structured.executive_summary || 'N/A'}
 
 TAKEAWAYS:
-${structured.key_takeaways?.map((item) => `- ${item}`).join("\n") || "None"}
+${structured.key_takeaways?.map((item) => `- ${item}`).join('\n') || 'None'}
 
 ACTION ITEMS:
-${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
+${structured.action_items?.map((item) => `- ${item}`).join('\n') || 'None'}
     `.trim();
 
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast.success("Summary copied");
+    toast.success('Summary copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -85,10 +101,12 @@ ${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
       {/* Clean Header Bar matching Transcript */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-neutral-900 tracking-tight">AI Summary</h3>
+          <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
+            AI Summary
+          </h3>
           {structured.model_used && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 border border-neutral-200 text-[10px] font-medium text-neutral-600">
-              {structured.model_used.replace(/^models\//, "")}
+              {structured.model_used.replace(/^models\//, '')}
             </span>
           )}
         </div>
@@ -97,7 +115,7 @@ ${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
           type="button"
           onClick={handleCopy}
           className="rounded-lg border border-neutral-200 bg-neutral-50 p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
-          title={copied ? "Copied" : "Copy summary"}
+          title={copied ? 'Copied' : 'Copy summary'}
         >
           {copied ? (
             <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -121,7 +139,9 @@ ${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
         {/* Takeaways */}
         {structured.key_takeaways && structured.key_takeaways.length > 0 && (
           <div className="pt-1">
-            <h4 className="text-xs font-bold text-neutral-900 mb-2.5 font-sans">Takeaways</h4>
+            <h4 className="text-xs font-bold text-neutral-900 mb-2.5 font-sans">
+              Takeaways
+            </h4>
             <ul className="space-y-3">
               {structured.key_takeaways.map((takeaway) => (
                 <li
@@ -139,7 +159,9 @@ ${structured.action_items?.map((item) => `- ${item}`).join("\n") || "None"}
         {/* Action Items */}
         {structured.action_items && structured.action_items.length > 0 && (
           <div className="pt-1">
-            <h4 className="text-xs font-bold text-neutral-900 mb-2.5 font-sans">Action Items</h4>
+            <h4 className="text-xs font-bold text-neutral-900 mb-2.5 font-sans">
+              Action Items
+            </h4>
             <ul className="space-y-3">
               {structured.action_items.map((item) => (
                 <li

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Github, PanelLeftOpen } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import type React from "react";
-import { useEffect, useState, useTransition } from "react";
+import { Github, PanelLeftOpen } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import type React from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 interface Props {
   showNavSwitcher?: boolean;
@@ -29,13 +29,13 @@ export default function Navbar({
 
   // Prefetch routes for instantaneous transitions
   useEffect(() => {
-    router.prefetch("/");
-    router.prefetch("/architecture");
+    router.prefetch('/');
+    router.prefetch('/architecture');
   }, [router]);
 
   if (!showNavSwitcher) return null;
 
-  const isArch = activePath === "/architecture";
+  const isArch = activePath === '/architecture';
 
   const handleNavigate = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -71,28 +71,28 @@ export default function Navbar({
         {/* Full-height sliding active pill touching container bounds with spring-like smooth ease */}
         <div
           className={`absolute inset-y-0 left-0 w-28 rounded-full bg-white border border-neutral-200 shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] pointer-events-none will-change-transform ${
-            isArch ? "translate-x-full" : "translate-x-0"
+            isArch ? 'translate-x-full' : 'translate-x-0'
           }`}
         />
 
         <Link
           href="/"
-          onClick={(e) => handleNavigate("/", e)}
+          onClick={(e) => handleNavigate('/', e)}
           className={`relative z-10 w-28 h-full flex items-center justify-center text-xs rounded-full transition-colors duration-200 ${
             !isArch
-              ? "text-neutral-900 font-semibold"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
+              ? 'text-neutral-900 font-semibold'
+              : 'text-neutral-500 hover:text-neutral-800 font-medium'
           }`}
         >
           Notes
         </Link>
         <Link
           href="/architecture"
-          onClick={(e) => handleNavigate("/architecture", e)}
+          onClick={(e) => handleNavigate('/architecture', e)}
           className={`relative z-10 w-28 h-full flex items-center justify-center text-xs rounded-full transition-colors duration-200 ${
             isArch
-              ? "text-neutral-900 font-semibold"
-              : "text-neutral-500 hover:text-neutral-800 font-medium"
+              ? 'text-neutral-900 font-semibold'
+              : 'text-neutral-500 hover:text-neutral-800 font-medium'
           }`}
         >
           Architecture

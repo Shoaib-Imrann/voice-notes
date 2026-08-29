@@ -27,6 +27,18 @@ def test_upload_invalid_file_extension(client):
     assert response.status_code == 400
     assert "Unsupported file format" in response.json()["detail"]
 
+import wave
+
+def create_valid_wav_bytes(duration_secs: float = 1.0) -> bytes:
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        num_frames = int(16000 * duration_secs)
+        wav_file.writeframes(b"\x00\x00" * num_frames)
+    return buf.getvalue()
+
 def test_upload_empty_file(client):
     files = {"file": ("empty.mp3", io.BytesIO(b""), "audio/mpeg")}
     response = client.post("/api/v1/notes/upload", files=files)
@@ -34,8 +46,8 @@ def test_upload_empty_file(client):
     assert "empty" in response.json()["detail"]
 
 def test_upload_and_list_note(client):
-    fake_audio_content = b"ID3\x03\x00\x00\x00\x00\x00\x00Fake MP3 header and audio content for testing."
-    files = {"file": ("meeting_notes.mp3", io.BytesIO(fake_audio_content), "audio/mpeg")}
+    valid_wav_content = create_valid_wav_bytes(2.0)
+    files = {"file": ("meeting_notes.wav", io.BytesIO(valid_wav_content), "audio/wav")}
     data = {"title": "Q3 Planning Meeting"}
     
     upload_res = client.post("/api/v1/notes/upload", files=files, data=data)
@@ -65,13 +77,16 @@ def test_upload_and_list_note(client):
     get_after_delete = client.get(f"/api/v1/notes/{note_id}")
     assert get_after_delete.status_code == 404
 
-def test_upload_non_mp3_audio(client):
-    fake_audio_content = b"Fake AAC/M4A audio content for testing."
-    files = {"file": ("recording.m4a", io.BytesIO(fake_audio_content), "audio/x-m4a")}
-    data = {"title": "M4A Voice Memo"}
+def test_upload_non_mp3_audio(client, monkeypatch):
+    from app.services import audio
+    monkeypatch.setattr(audio, "get_audio_duration_and_validate", lambda path: 15.0)
+    
+    valid_wav = create_valid_wav_bytes(1.0)
+    files = {"file": ("recording.wav", io.BytesIO(valid_wav), "audio/wav")}
+    data = {"title": "WAV Voice Memo"}
     
     upload_res = client.post("/api/v1/notes/upload", files=files, data=data)
     assert upload_res.status_code == 201
     note_data = upload_res.json()
-    assert note_data["title"] == "M4A Voice Memo"
+    assert note_data["title"] == "WAV Voice Memo"
     assert note_data["status"] == "UPLOADED"

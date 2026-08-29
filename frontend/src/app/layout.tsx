@@ -1,19 +1,19 @@
-import Providers from "@/lib/providers";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import type React from "react";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import type React from 'react';
+import Providers from '@/lib/providers';
+import './globals.css';
 
 const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "VoiceNotes - AI Audio Notes Platform",
+  title: 'Voice Notes',
   description:
-    "AI-powered Voice Notes platform with Gnani Speech-To-Text transcription and Google Gemini summaries.",
+    'AI-powered Voice Notes platform with Gnani Speech-To-Text transcription and Google Gemini summaries.',
 };
 
 export default function RootLayout({

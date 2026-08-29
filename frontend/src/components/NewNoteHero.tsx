@@ -1,11 +1,19 @@
-"use client";
+'use client';
 
-import { apiClient } from "@/lib/axios";
-import type { AudioNote } from "@/types/note";
-import { AlertTriangle, Bot, FileAudio, Loader2, Mic, UploadCloud, X } from "lucide-react";
-import type React from "react";
-import { useRef, useState } from "react";
-import { toast } from "sonner";
+import {
+  AlertTriangle,
+  Bot,
+  FileAudio,
+  Loader2,
+  Mic,
+  UploadCloud,
+  X,
+} from 'lucide-react';
+import type React from 'react';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { apiClient } from '@/lib/axios';
+import type { AudioNote } from '@/types/note';
 
 interface Props {
   onUploadSuccess: (note: AudioNote) => void;
@@ -13,42 +21,52 @@ interface Props {
 
 export default function NewNoteHero({ onUploadSuccess }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedExtensions = [".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac", ".webm"];
+  const allowedExtensions = [
+    '.mp3',
+    '.wav',
+    '.m4a',
+    '.ogg',
+    '.flac',
+    '.aac',
+    '.webm',
+  ];
   const maxSizeBytes = 15 * 1024 * 1024; // 15MB limit
 
   const handleFileSelect = (file: File) => {
     setErrorMessage(null);
-    const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
+    const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
 
     if (!allowedExtensions.includes(ext)) {
-      setErrorMessage(`Unsupported format '${ext}'. Please upload MP3, WAV, M4A, OGG, or FLAC.`);
-      toast.error("Unsupported file format");
+      setErrorMessage(
+        `Unsupported format '${ext}'. Please upload MP3, WAV, M4A, OGG, or FLAC.`
+      );
+      toast.error('Unsupported file format');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
     if (file.size === 0) {
-      setErrorMessage("Selected file is empty.");
-      toast.error("Empty audio file");
+      setErrorMessage('Selected file is empty.');
+      toast.error('Empty audio file');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
     if (file.size > maxSizeBytes) {
       setErrorMessage(
-        `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 15MB limit.`,
+        `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 15MB limit.`
       );
-      toast.error("File size exceeds 15MB limit");
+      toast.error('File size exceeds 15MB limit');
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       return;
     }
 
@@ -62,20 +80,20 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
         const mins = Math.floor(tempAudio.duration / 60);
         const secs = Math.floor(tempAudio.duration % 60);
         setErrorMessage(
-          `Audio duration (${mins}m ${secs}s) exceeds the maximum limit of 10 minutes.`,
+          `Audio duration (${mins}m ${secs}s) exceeds the maximum limit of 10 minutes.`
         );
-        toast.error("Audio exceeds 10-minute limit");
+        toast.error('Audio exceeds 10-minute limit');
         setSelectedFile(null);
-        setTitle("");
+        setTitle('');
       } else {
         setSelectedFile(file);
-        setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
+        setTitle(file.name.replace(/\.[^/.]+$/, '').slice(0, 40));
       }
     };
     tempAudio.onerror = () => {
       URL.revokeObjectURL(objectUrl);
       setSelectedFile(file);
-      setTitle(file.name.replace(/\.[^/.]+$/, "").slice(0, 40));
+      setTitle(file.name.replace(/\.[^/.]+$/, '').slice(0, 40));
     };
   };
 
@@ -98,32 +116,38 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
     setErrorMessage(null);
 
     const formData = new FormData();
-    formData.append("file", selectedFile);
+    formData.append('file', selectedFile);
     if (title.trim()) {
-      formData.append("title", title.trim());
+      formData.append('title', title.trim());
     }
 
     try {
-      const response = await apiClient.post<AudioNote>("/notes/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 180000,
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percent);
-          }
-        },
-      });
+      const response = await apiClient.post<AudioNote>(
+        '/notes/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 180000,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percent);
+            }
+          },
+        }
+      );
 
-      toast.success("Processing audio...");
+      toast.success('Processing audio...');
       onUploadSuccess(response.data);
       setSelectedFile(null);
-      setTitle("");
+      setTitle('');
       setUploadProgress(0);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || "Upload failed.";
+      const msg = err.response?.data?.detail || err.message || 'Upload failed.';
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -177,7 +201,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              if (e.key === 'Enter' || e.key === ' ') {
                 fileInputRef.current?.click();
               }
             }}
@@ -190,7 +214,9 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
               type="file"
               accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+              onChange={(e) =>
+                e.target.files?.[0] && handleFileSelect(e.target.files[0])
+              }
             />
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 group-hover:scale-105 transition-transform mb-3">
               <UploadCloud className="h-5 w-5 text-neutral-700" />
@@ -227,7 +253,7 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
                   type="button"
                   onClick={() => {
                     setSelectedFile(null);
-                    setTitle("");
+                    setTitle('');
                   }}
                   className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 transition"
                 >

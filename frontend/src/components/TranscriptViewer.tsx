@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Check, Copy, Search } from "lucide-react";
-import React, { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { Check, Copy, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Props {
   transcript?: string | null;
@@ -11,11 +11,11 @@ interface Props {
 }
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
-  if (!query || !query.trim()) return <>{text}</>;
+  if (!query?.trim()) return <>{text}</>;
 
   const trimmedQuery = query.trim();
-  const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`(${escapedQuery})`, "gi");
+  const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
   const parts = text.split(regex);
 
   return (
@@ -37,13 +37,17 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function TranscriptViewer({ transcript, status, errorMessage }: Props) {
-  const [search, setSearch] = useState("");
+export default function TranscriptViewer({
+  transcript,
+  status,
+  errorMessage: _errorMessage,
+}: Props) {
+  const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
 
   // Format transcript into multiple grammatically structured English paragraphs
   const paragraphs = useMemo(() => {
-    if (!transcript || !transcript.trim()) return [];
+    if (!transcript?.trim()) return [];
 
     let rawText = transcript.trim();
 
@@ -51,10 +55,10 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
     rawText = rawText
       .replace(
         /\b(in|on|at|to|for|with|by|from|about|into|through|after|over|between|out|against|during|without|before|under|around|among|but|and|or|of|the|a|an)\.\s*/gi,
-        "$1 ",
+        '$1 '
       )
-      .replace(/(\d+),(\d+)\.(\d+)/g, "$1,$2")
-      .replace(/\s+/g, " ");
+      .replace(/(\d+),(\d+)\.(\d+)/g, '$1,$2')
+      .replace(/\s+/g, ' ');
 
     // 2. Check if raw text already has explicit line breaks
     const existingLines = rawText
@@ -78,10 +82,10 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
       const syntheticSentences: string[] = [];
 
       for (let i = 0; i < words.length; i += wordsPerSentence) {
-        let clause = words.slice(i, i + wordsPerSentence).join(" ");
+        let clause = words.slice(i, i + wordsPerSentence).join(' ');
         clause = clause.charAt(0).toUpperCase() + clause.slice(1);
         if (!/[.!?]$/.test(clause)) {
-          clause += ".";
+          clause += '.';
         }
         syntheticSentences.push(clause);
       }
@@ -99,16 +103,16 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
       currentBlock.push(sentences[i]);
 
       if (currentBlock.length >= 3 || i === sentences.length - 1) {
-        let combined = currentBlock.join(" ").trim();
+        let combined = currentBlock.join(' ').trim();
 
         while (danglingRegex.test(combined) && i + 1 < sentences.length) {
           i++;
           currentBlock.push(sentences[i]);
-          combined = currentBlock.join(" ").trim();
+          combined = currentBlock.join(' ').trim();
         }
 
         if (!/[.!?]$/.test(combined)) {
-          combined += ".";
+          combined += '.';
         }
 
         paragraphBlocks.push(combined);
@@ -121,19 +125,33 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
 
   const filteredParagraphs = useMemo(() => {
     if (!search.trim()) return paragraphs;
-    return paragraphs.filter((p) => p.toLowerCase().includes(search.toLowerCase()));
+    return paragraphs.filter((p) =>
+      p.toLowerCase().includes(search.toLowerCase())
+    );
   }, [paragraphs, search]);
 
   if (!transcript) {
-    if (status === "FAILED") {
+    if (status === 'FAILED') {
       return (
         <div className="flex flex-col items-center justify-center h-full rounded-2xl border border-neutral-200 bg-neutral-50/50 p-8 text-center space-y-2 select-none">
           <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-1">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
-          <h3 className="text-xs font-semibold text-neutral-800">Transcript Unavailable</h3>
+          <h3 className="text-xs font-semibold text-neutral-800">
+            Transcript Unavailable
+          </h3>
           <p className="text-[11px] text-neutral-500 max-w-xs leading-relaxed">
             Click the retry button above to run speech recognition again.
           </p>
@@ -164,7 +182,7 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
   const handleCopy = () => {
     navigator.clipboard.writeText(transcript);
     setCopied(true);
-    toast.success("Transcript copied");
+    toast.success('Transcript copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -173,7 +191,7 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
-            Transcript{" "}
+            Transcript{' '}
             <span className="text-[11px] text-neutral-400 font-normal ml-1">
               • {wordCount} words
             </span>
@@ -184,7 +202,7 @@ export default function TranscriptViewer({ transcript, status, errorMessage }: P
           type="button"
           onClick={handleCopy}
           className="rounded-lg border border-neutral-200 bg-neutral-50 p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
-          title={copied ? "Copied" : "Copy transcript"}
+          title={copied ? 'Copied' : 'Copy transcript'}
         >
           {copied ? (
             <Check className="h-3.5 w-3.5 text-emerald-600" />

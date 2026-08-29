@@ -1,29 +1,81 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.6.4/schema.json",
-  "files": {
-    "ignore": [".next/**", "node_modules/**", ".vercel/**", "dist/**"]
+  "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
   },
-  "organizeImports": {
-    "enabled": true
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "src/app/**/*.{ts,tsx,js,jsx}",
+      "src/components/!(ui)/**/*.{ts,tsx,js,jsx}",
+      "src/components/*.{ts,tsx,js,jsx}",
+      "src/hooks/**/*.{ts,tsx,js,jsx}",
+      "src/lib/**/*.{ts,tsx,js,jsx}",
+      "src/store/**/*.{ts,tsx,js,jsx}",
+      "src/types/**/*.{ts,tsx,js,jsx}",
+      "src/context/**/*.{ts,tsx,js,jsx}",
+      "app/**/*.{ts,tsx,js,jsx}",
+      "components/!(ui)/**/*.{ts,tsx,js,jsx}",
+      "components/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
+      "lib/**/*.{ts,tsx,js,jsx}",
+      "store/**/*.{ts,tsx,js,jsx}",
+      "types/**/*.{ts,tsx,js,jsx}",
+      "context/**/*.{ts,tsx,js,jsx}"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
-      "correctness": {
-        "noUnusedVariables": "warn"
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off",
+        "useButtonType": "off",
+        "noSvgWithoutTitle": "off",
+        "noAutofocus": "off",
+        "noLabelWithoutControl": "off",
+        "useFocusableInteractive": "off",
+        "useSemanticElements": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "noDocumentCookie": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       }
     }
   },
-  "formatter": {
-    "enabled": true,
-    "formatWithErrors": false,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineEnding": "lf",
-    "lineWidth": 100
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "trailingCommas": "es5",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false
+    }
   }
 }
