@@ -57,7 +57,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to Audio Notes Platform API",
+        "message": "Voice Notes Platform API",
         "docs": "/docs",
         "health": f"{settings.API_V1_STR}/health"
     }

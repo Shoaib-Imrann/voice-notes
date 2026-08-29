@@ -195,6 +195,13 @@ export default function ArchitecturePage() {
                 transcription succeeded but summarization failed, Retry only
                 re-runs the LLM call.
               </li>
+              <li>
+                <strong className="text-neutral-900">Cloudflare WAF:</strong>{' '}
+                Gnani&apos;s API endpoint enforces Cloudflare WAF bot
+                protection. Public cloud datacenter IP ranges (AWS / Render)
+                receive HTTP 403 challenge blocks, while residential
+                connections work.
+              </li>
             </ul>
           </section>
 
