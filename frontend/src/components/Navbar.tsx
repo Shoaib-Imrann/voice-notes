@@ -99,19 +99,21 @@ export default function Navbar({
         </Link>
       </nav>
 
-      {/* Right Slot: Circular Repository Icon Button */}
-      <div className="absolute right-4 top-4 flex items-center">
-        <a
-          href="https://github.com/Shoaib-Imrann/voice-notes"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="h-9 w-9 rounded-full flex items-center justify-center bg-white border border-neutral-200/80 hover:bg-neutral-50 text-neutral-600 hover:text-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
-          title="GitHub Repository"
-          aria-label="GitHub Repository"
-        >
-          <Github className="h-4 w-4" />
-        </a>
-      </div>
+      {/* Right Slot: Circular Repository Icon Button (hidden on architecture page where it is rendered in header) */}
+      {!isArch && (
+        <div className="absolute right-4 top-4 flex items-center">
+          <a
+            href="https://github.com/Shoaib-Imrann/voice-notes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 w-9 rounded-full flex items-center justify-center bg-white border border-neutral-200/80 hover:bg-neutral-50 text-neutral-600 hover:text-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
+            title="GitHub Repository"
+            aria-label="GitHub Repository"
+          >
+            <Github className="h-4 w-4" />
+          </a>
+        </div>
+      )}
     </header>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
+import { Github, ArrowUpRight } from "lucide-react";
 import React from "react";
 
 export default function ArchitecturePage() {
@@ -8,140 +9,163 @@ export default function ArchitecturePage() {
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 space-y-8 sm:space-y-12">
-        {/* Header */}
-        <div className="space-y-1.5">
+      <main className="flex-1 w-full py-8 sm:py-12 space-y-10 sm:space-y-12">
+        {/* Header with Title and GitHub Button */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-            System Architecture
+            Upload to Transcript Flow
           </h1>
-          <p className="text-sm text-neutral-500 leading-relaxed">
-            How Audio Notes processes long audio recordings into structured summaries.
-          </p>
+          <a
+            href="https://github.com/Shoaib-Imrann/voice-notes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-2.5 sm:px-3.5 rounded-full flex items-center justify-center gap-1.5 bg-white border border-neutral-200/80 hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition shrink-0 ml-3 text-xs font-medium"
+            title="GitHub Repository"
+            aria-label="GitHub Repository"
+          >
+            <Github className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">GitHub</span>
+            <ArrowUpRight className="hidden sm:inline h-3.5 w-3.5 text-neutral-400" />
+          </a>
         </div>
 
-        {/* Minimal Pipeline Flow */}
-        <div className="w-full overflow-x-auto rounded-xl bg-neutral-50 border border-neutral-100">
-          <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-neutral-600 px-4 py-3 sm:py-4 min-w-max sm:min-w-full">
-            <span className="font-medium text-neutral-900 whitespace-nowrap">Upload</span>
-            <span className="text-neutral-300 shrink-0 select-none">&rarr;</span>
-            <span className="font-medium text-neutral-900 whitespace-nowrap">25s Chunking</span>
-            <span className="text-neutral-300 shrink-0 select-none">&rarr;</span>
-            <span className="font-medium text-neutral-900 whitespace-nowrap">Gnani STT</span>
-            <span className="text-neutral-300 shrink-0 select-none">&rarr;</span>
-            <span className="font-medium text-neutral-900 whitespace-nowrap">Gemini LLM</span>
-            <span className="text-neutral-300 shrink-0 select-none">&rarr;</span>
-            <span className="font-medium text-neutral-900 whitespace-nowrap">Summary</span>
+        {/* 6 Flow Boxes (ONLY THIS SECTION HAS FULL WIDTH) */}
+        <div className="w-full px-4 sm:px-8 lg:px-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full">
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 1</span>
+              <h3 className="text-xs font-semibold text-neutral-900">Validation</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                Checks format, size (&lt;15MB), and duration (&lt;10 min).
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 2</span>
+              <h3 className="text-xs font-semibold text-neutral-900">Storage & DB</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                Uploads to Supabase Storage & saves row in PostgreSQL.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 3</span>
+              <h3 className="text-xs font-semibold text-neutral-900">25s Slicing</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                FFmpeg splits audio into 25-second WAV segments.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 4</span>
+              <h3 className="text-xs font-semibold text-neutral-900">Gnani STT</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                Sends chunks to Gnani STT & stitches the transcript.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 5</span>
+              <h3 className="text-xs font-semibold text-neutral-900">Gemini AI</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                Generates overview and key takeaways from transcript.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3.5 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Step 6</span>
+              <h3 className="text-xs font-semibold text-neutral-900">Cleanup</h3>
+              <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
+                Marks note completed & deletes temp files from disk.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Core Sections */}
-        <div className="space-y-10 text-sm text-neutral-600 leading-relaxed">
-          {/* Section 1 */}
+        {/* Core Sections (Centered readable column) */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8 text-sm text-neutral-600 leading-relaxed">
+
+          {/* Section 2: Long Audio */}
           <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">Long-Audio Chunking</h2>
+            <h2 className="text-base font-semibold text-neutral-900">Long-Audio Handling</h2>
             <p>
-              Gnani’s speech-to-text API limits individual audio duration per request. To handle
-              recordings up to 10 minutes, the backend slices audio into 25-second WAV segments
-              using pydub and ffmpeg.
+              To transcribe audio files longer than 25 seconds, the backend splits the audio into 25-second WAV segments using FFmpeg and PyDub.
             </p>
             <p>
-              Segments are processed sequentially with a brief safety delay and automatic retry on
-              rate limits (HTTP 429), then combined into a single unified transcript.
+              Each 25-second chunk is sent to Gnani STT one by one. The server then stitches all the returned text pieces together into one complete, formatted transcript.
             </p>
           </section>
 
-          {/* Section 2 */}
+          {/* Section 2: Sync vs Background */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
-              Synchronous vs. Background Execution
+              Sync vs. Background Work
             </h2>
-            <p>
-              The system cleanly divides work between immediate HTTP responses and background
-              processing:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-neutral-600">
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Synchronous:</strong> Validates file format and
-                size, checks binary header integrity, saves the initial note record with a slug, and
-                immediately returns HTTP 201 so the UI stays fast and responsive.
+                <strong className="text-neutral-900">Synchronous:</strong> Checks file format and duration (under 10 minutes), uploads the audio file to Supabase Storage, creates the database record, and immediately returns HTTP 201.
               </li>
               <li>
-                <strong className="text-neutral-900">Background:</strong> FastAPI background tasks
-                handle audio duration calculation, chunking, Gnani speech-to-text transcription, and
-                Gemini structured summarization asynchronously.
+                <strong className="text-neutral-900">Background Tasks:</strong> A background worker handles the heavy operations: audio slicing, Gnani STT calls, Gemini AI summarization, and disk cleanup.
               </li>
             </ul>
           </section>
 
-          {/* Section 3 */}
+          {/* Section 3: Storage */}
+          <section className="space-y-2">
+            <h2 className="text-base font-semibold text-neutral-900">Storage</h2>
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
+              <li>
+                <strong className="text-neutral-900">Audio Files:</strong> Stored permanently in a public Supabase Storage bucket.
+              </li>
+              <li>
+                <strong className="text-neutral-900">Database:</strong> Note details, transcripts, and AI summaries are saved in Supabase PostgreSQL.
+              </li>
+              <li>
+                <strong className="text-neutral-900">Server Disk:</strong> Audio files are only stored temporarily on the server while actively processing, and deleted immediately after.
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 4: Failure Handling */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
               Failure Handling
             </h2>
-            <p>
-              The platform errors across every stage of the pipeline:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-neutral-600">
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">Upload & Header Validation:</strong> Immediate HTTP 400 rejection for corrupted files, empty files, or unsupported formats before any processing starts.
+                <strong className="text-neutral-900">Client Disconnects:</strong> Processing runs server-side independently once uploaded, persisting state regardless of client network status.
               </li>
               <li>
-                <strong className="text-neutral-900">Visible Error Badges:</strong> When external services fail (e.g. API timeouts, rate limits, or Cloudflare datacenter IP challenges), the exact failure message is rendered directly on the note card.
+                <strong className="text-neutral-900">Validation:</strong> Files over 10 minutes or corrupted audio are rejected immediately before database insertion.
               </li>
               <li>
-                <strong className="text-neutral-900">Retry Isolation:</strong> If LLM summarization fails after successful ASR transcription, the user can click "Retry Summary" to re-run only the summary without re-transcribing the audio.
+                <strong className="text-neutral-900">Error Visibility:</strong> API timeouts or failures are captured and displayed with a Retry option.
+              </li>
+              <li>
+                <strong className="text-neutral-900">Isolated Retry:</strong> If transcription succeeded but summarization failed, Retry only re-runs the LLM call.
               </li>
             </ul>
           </section>
 
-          {/* Section 4 */}
-          <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">
-              Structured Summarization
-            </h2>
-            <p>
-              Once transcription completes, Gemini analyzes the text and produces a clean JSON
-              summary with an executive overview, key takeaways.
-            </p>
-          </section>
-
-          {/* Section 5 */}
-          <section className="space-y-2">
-            <h2 className="text-base font-semibold text-neutral-900">Storage Strategy</h2>
-            <p>
-              Note metadata, transcripts, and summaries are persisted in Supabase PostgreSQL, while
-              uploaded audio files are stored in Supabase Cloud Storage (with automatic fallback to local
-              disk for offline development).
-            </p>
-          </section>
-
-          {/* Section 6 */}
+          {/* Section 5: What I Would Improve */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">What I Would Improve</h2>
-            <p>
-              For a production deployment at scale, several key improvements would enhance speed and
-              reliability:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-neutral-600">
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
-                <strong className="text-neutral-900">WebSockets / Server-Sent Events:</strong>{" "}
-                Replace client-side HTTP polling with real-time push events for instant status
-                updates.
+                <strong className="text-neutral-900">Silence-Based Chunking:</strong> Split audio during natural breath pauses rather than fixed 25-second intervals to prevent words from getting cut in half.
               </li>
               <li>
-                <strong className="text-neutral-900">Dedicated Task Queue (Celery + Redis):</strong>{" "}
-                Offload background tasks from the API server to horizontal worker nodes for heavy
-                concurrent audio workloads.
+                <strong className="text-neutral-900">Semantic Search:</strong> Search past notes by meaning and topic (e.g. searching "pricing" finds notes discussing "costs and budget") rather than only exact keyword matches.
               </li>
               <li>
-                <strong className="text-neutral-900">Parallel Chunk Transcription:</strong> Process
-                independent audio chunks concurrently with controlled concurrency pools instead of
-                strictly sequentially.
+                <strong className="text-neutral-900">WebSockets:</strong> Replace 2-second HTTP polling with real-time push events for instant status updates.
               </li>
               <li>
-                <strong className="text-neutral-900">Indic Language Support:</strong> Add language
-                selection to leverage Gnani’s multilingual Indic speech models (Hindi, Kannada,
-                Tamil, Telugu).
+                <strong className="text-neutral-900">Task Queue (Celery + Redis):</strong> Move background processing to dedicated worker nodes for high-volume traffic.
+              </li>
+              <li>
+                <strong className="text-neutral-900">Indic Language Support:</strong> Add language selection so users can transcribe in Hindi, Kannada, Tamil, or Telugu using Gnani's multilingual models.
               </li>
             </ul>
           </section>

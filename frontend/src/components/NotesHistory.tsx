@@ -1,7 +1,7 @@
 "use client";
 
 import type { AudioNote } from "@/types/note";
-import { FileAudio, PanelLeftClose, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, FileAudio, PanelLeftClose, Plus, RotateCw, Trash2 } from "lucide-react";
 import React, { useMemo } from "react";
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   onNewNote: () => void;
   onDeleteNote: (noteId: string, noteTitle?: string) => void;
   isLoading: boolean;
+  isError?: boolean;
   onRefresh: () => void;
   onToggleSidebar?: () => void;
 }
@@ -22,6 +23,8 @@ export default function NotesHistory({
   onNewNote,
   onDeleteNote,
   isLoading = false,
+  isError = false,
+  onRefresh,
   onToggleSidebar,
 }: Props) {
   // Group notes by relative time (Today, Yesterday, Previous 7 Days, Older)
@@ -102,6 +105,24 @@ export default function NotesHistory({
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
             <div className="h-10 bg-neutral-800/60 rounded-xl w-full" />
+          </div>
+        ) : isError ? (
+          <div className="mx-1 my-3 p-3 rounded-xl border border-red-500/30 bg-red-950/20 text-center space-y-2">
+            <div className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span>Server Offline</span>
+            </div>
+            <p className="text-[11px] text-neutral-400 leading-tight">
+              Backend is unreachable or starting up.
+            </p>
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium transition cursor-pointer border border-neutral-700"
+            >
+              <RotateCw className="h-3 w-3" />
+              <span>Retry</span>
+            </button>
           </div>
         ) : notes.length === 0 ? (
           <div className="py-8 text-center text-xs text-neutral-500">No recordings yet.</div>

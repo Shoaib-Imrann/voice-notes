@@ -10,7 +10,7 @@ import TranscriptViewer from "@/components/TranscriptViewer";
 import { apiClient } from "@/lib/axios";
 import type { AudioNote } from "@/types/note";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PanelLeftOpen, Plus } from "lucide-react";
+import { AlertTriangle, PanelLeftOpen, Plus, RotateCw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -133,6 +133,7 @@ function DashboardContent() {
   const {
     data: notes = [],
     isLoading: isLoadingNotes,
+    isError: isErrorNotes,
     refetch: refetchNotes,
   } = useQuery<AudioNote[]>({
     queryKey: ["notes"],
@@ -143,7 +144,12 @@ function DashboardContent() {
   });
 
   // Query selected note details with real-time polling while processing
-  const { data: selectedNote, isLoading: isLoadingSelectedNote } = useQuery<AudioNote>({
+  const {
+    data: selectedNote,
+    isLoading: isLoadingSelectedNote,
+    isError: isErrorSelectedNote,
+    refetch: refetchSelectedNote,
+  } = useQuery<AudioNote>({
     queryKey: ["note", selectedNoteId],
     queryFn: async () => {
       if (!selectedNoteId) return null as any;
@@ -303,6 +309,7 @@ function DashboardContent() {
               }}
               onDeleteNote={promptDeleteNote}
               isLoading={isLoadingNotes}
+              isError={isErrorNotes}
               onRefresh={refetchNotes}
               onToggleSidebar={() => setIsSidebarOpen(false)}
             />
@@ -357,6 +364,39 @@ function DashboardContent() {
           {selectedNoteId && isLoadingSelectedNote ? (
             /* Skeleton Loading state while fetching selected note */
             <NoteWorkspaceSkeleton />
+          ) : selectedNoteId && isErrorSelectedNote ? (
+            /* Instant Server Down / Note Error Screen */
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="max-w-md w-full p-6 rounded-2xl border border-red-200 bg-red-50/40 space-y-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600 mx-auto">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <h2 className="text-base font-semibold text-neutral-900">Server Offline or Unreachable</h2>
+                <p className="text-xs text-neutral-500 leading-relaxed font-sans">
+                  The service might be starting up (cold start) or offline.
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      refetchSelectedNote();
+                      refetchNotes();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition cursor-pointer"
+                  >
+                    <RotateCw className="h-3 w-3" />
+                    <span>Retry Connection</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNewNote}
+                    className="px-4 py-2 text-xs font-medium bg-white border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition cursor-pointer"
+                  >
+                    New Note
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : !isMounted && !selectedNoteId ? (
             /* Initial skeleton loading state until client mount */
             <NoteWorkspaceSkeleton />
