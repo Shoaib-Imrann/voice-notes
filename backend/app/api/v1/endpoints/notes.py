@@ -4,12 +4,13 @@ import uuid
 import shutil
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Request, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.note import AudioNote, generate_slug
 from app.schemas.note import AudioNoteResponse, AudioNoteStatusResponse
 from app.core.config import settings
+from app.core.rate_limit import enforce_ip_rate_limit
 from app.services.tasks import process_audio_note_task
 from app.services.supabase_storage import upload_to_supabase_storage
 
@@ -48,12 +49,14 @@ def format_note_response(note: AudioNote) -> AudioNoteResponse:
 
 @router.post("/notes/upload", response_model=AudioNoteResponse, status_code=status.HTTP_201_CREATED)
 async def upload_audio_note(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    # 0. Check Service Configuration First
+    # 0. Enforce Rate Limiting & Service Availability
+    enforce_ip_rate_limit(request)
     if not settings.GNANI_API_KEY:
         raise HTTPException(
             status_code=400,
@@ -190,9 +193,11 @@ async def upload_audio_note(
 @router.post("/notes/{note_id}/retry", response_model=AudioNoteResponse)
 async def retry_audio_note(
     note_id: str,
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
+    enforce_ip_rate_limit(request)
     note = db.query(AudioNote).filter(AudioNote.id == note_id).first()
     if not note:
         raise HTTPException(
