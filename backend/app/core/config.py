@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
     MAX_UPLOAD_SIZE_MB: int = 15
-    MAX_AUDIO_DURATION_SECONDS: float = 600.0  # 10 minutes max
-    ALLOWED_AUDIO_EXTENSIONS: set[str] = {".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac", ".webm"}
+    MAX_AUDIO_DURATION_SECONDS: int = 600
+    RATE_LIMIT_UPLOADS_PER_HOUR: int = 10
+    ALLOWED_AUDIO_EXTENSIONS: list[str] = [".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac", ".webm"]
     
     # Telegram Alerts (Optional)
     TELEGRAM_BOT_TOKEN: str | None = None

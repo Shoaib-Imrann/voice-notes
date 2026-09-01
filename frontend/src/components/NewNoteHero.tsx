@@ -400,6 +400,11 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             </div>
           </form>
         )}
+
+        {/* Subtle Showcase Footer */}
+        <p className="text-[11px] text-neutral-400 font-sans tracking-tight pt-1">
+          Showcase Demo — AI Voice Notes Platform
+        </p>
       </div>
     </div>
   );
