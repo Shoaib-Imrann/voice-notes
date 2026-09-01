@@ -115,8 +115,6 @@ def process_audio_note_task(note_id: str):
                 if note_record.file_path and os.path.exists(note_record.file_path):
                     os.remove(note_record.file_path)
                     logger.info(f"Cleaned up temporary working audio file {note_record.file_path} from server disk.")
-                note_record.file_path = None
-                db.commit()
         except Exception as cleanup_err:
             logger.warning(f"Error during file cleanup: {cleanup_err}")
         finally:

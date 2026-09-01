@@ -170,17 +170,21 @@ async def transcribe_audio_gnani(file_path: str) -> str:
             logger.warning(f"Silence detection failed: {sil_err}. Falling back to 10s intervals.")
             raw_segments = []
 
-        # If silence detection found natural pauses, group them into 8s-12s speech chunks
+        # If silence detection found natural pauses, group them into 8s-12s speech chunks.
+        # Ensure NO chunk ever exceeds 12 seconds (Gnani API hard limit is 30s, sweet spot is 8-12s).
         chunks = []
         if raw_segments and len(raw_segments) > 1:
             current_chunk = AudioSegment.empty()
             for seg in raw_segments:
-                if len(current_chunk) + len(seg) > 12000:  # 12 seconds optimal threshold
-                    if len(current_chunk) > 0:
-                        chunks.append(current_chunk)
-                    current_chunk = seg
-                else:
-                    current_chunk = current_chunk + seg
+                # If a single speech segment without silence is longer than 12s, split into 10s sub-pieces
+                sub_segs = [seg[i : i + 10000] for i in range(0, len(seg), 10000)] if len(seg) > 12000 else [seg]
+                for s in sub_segs:
+                    if len(current_chunk) + len(s) > 12000:
+                        if len(current_chunk) > 0:
+                            chunks.append(current_chunk)
+                        current_chunk = s
+                    else:
+                        current_chunk = current_chunk + s
             if len(current_chunk) > 0:
                 chunks.append(current_chunk)
         else:
