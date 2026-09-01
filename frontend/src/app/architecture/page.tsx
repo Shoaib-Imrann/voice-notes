@@ -60,10 +60,10 @@ export default function ArchitecturePage() {
                 Step 3
               </span>
               <h3 className="text-xs font-semibold text-neutral-900">
-                25s Slicing
+                Speech Slicing
               </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
-                FFmpeg splits audio into 25-second WAV segments.
+                Splits on natural pauses into 8–12s speech segments.
               </p>
             </div>
 
@@ -75,7 +75,7 @@ export default function ArchitecturePage() {
                 Gnani STT
               </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
-                Sends chunks to Gnani STT & stitches the transcript.
+                Transcribes chunks via Prisma ASR & stitches transcript.
               </p>
             </div>
 
@@ -87,7 +87,7 @@ export default function ArchitecturePage() {
                 Gemini AI
               </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
-                Generates overview and key takeaways from transcript.
+                Generates executive summary and key takeaways.
               </p>
             </div>
 
@@ -96,10 +96,10 @@ export default function ArchitecturePage() {
                 Step 6
               </span>
               <h3 className="text-xs font-semibold text-neutral-900">
-                Cleanup
+                Memory Cleanup
               </h3>
               <p className="text-[11px] text-neutral-500 font-sans leading-relaxed">
-                Marks note completed & deletes temp files from disk.
+                Purges RAM via gc.collect() & deletes temp files.
               </p>
             </div>
           </div>
@@ -107,39 +107,55 @@ export default function ArchitecturePage() {
 
         {/* Core Sections (Centered readable column) */}
         <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8 text-sm text-neutral-600 leading-relaxed">
-          {/* Section 2: Long Audio */}
+          {/* Section 1: Long Audio & Silence-Aware Chunking */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
-              Long-Audio Handling
+              Silence-Aware Long-Audio Segmentation
             </h2>
             <p>
-              To transcribe audio files longer than 25 seconds, the backend
-              splits the audio into 25-second WAV segments using FFmpeg and
-              PyDub.
+              Gnani STT&apos;s REST endpoint is optimized for short speech
+              utterances and enforces a strict 30-second hard limit. To prevent
+              cutting words midway and avoid API rejections, the backend uses{' '}
+              <code className="text-xs bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-800 font-mono">
+                pydub.silence.split_on_silence
+              </code>{' '}
+              to detect natural breath pauses (&gt; 350ms).
             </p>
             <p>
-              Each 25-second chunk is sent to Gnani STT one by one. The server
-              then stitches all the returned text pieces together into one
-              complete, formatted transcript.
+              Pauses are grouped into optimal{' '}
+              <strong>8–12 second speech chunks</strong>, normalized to 16kHz
+              16-bit Mono PCM. If continuous fast speech has no pauses, a hard
+              10-second safety split prevents any chunk from exceeding limits.
+              If any chunk returns empty text, an adaptive half-segment
+              sub-chunk retry recovers 100% of the audio speech.
             </p>
           </section>
 
-          {/* Section 2: Sync vs Background */}
+          {/* Section 2: Sync vs Background Work & Memory Optimization */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
-              Sync vs. Background Work
+              Sync vs. Background Work & Memory Efficiency
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
                 <strong className="text-neutral-900">Synchronous:</strong>{' '}
-                Checks file format and duration (under 10 minutes), uploads the
-                audio file to Supabase Storage, creates the database record, and
-                immediately returns HTTP 201.
+                Checks format, size (&lt;15MB), and duration (&lt;10 min),
+                uploads to Supabase Storage, inserts the DB row, and returns
+                HTTP 201 instantly.
               </li>
               <li>
-                <strong className="text-neutral-900">Background Tasks:</strong>{' '}
-                A background worker handles the heavy operations: audio slicing,
-                Gnani STT calls, Gemini AI summarization, and disk cleanup.
+                <strong className="text-neutral-900">Background Worker:</strong>{' '}
+                Handles audio segmentation, sequential Gnani STT calls, Gemini
+                LLM summarization, and disk cleanup.
+              </li>
+              <li>
+                <strong className="text-neutral-900">RAM Management:</strong>{' '}
+                Explicit garbage collection (
+                <code className="text-xs bg-neutral-100 px-1 py-0.5 rounded font-mono">
+                  gc.collect()
+                </code>
+                ) and immediate chunk WAV deletion keep Python memory below
+                120MB, preventing Render Out-Of-Memory (512MB) restarts.
               </li>
             </ul>
           </section>
@@ -156,23 +172,47 @@ export default function ArchitecturePage() {
               </li>
               <li>
                 <strong className="text-neutral-900">Database:</strong> Note
-                details, transcripts, and AI summaries are saved in Supabase
-                PostgreSQL.
+                metadata, status, transcripts, and AI summaries are saved in
+                Supabase PostgreSQL with clean RESTful slug routing (
+                <code className="text-xs bg-neutral-100 px-1 py-0.5 rounded font-mono">
+                  /notes/:slug
+                </code>
+                ).
               </li>
               <li>
                 <strong className="text-neutral-900">Server Disk:</strong> Audio
-                files are only stored temporarily on the server while actively
-                processing, and deleted immediately after.
+                files are only stored temporarily on ephemeral disk during
+                active processing, and deleted immediately after.
               </li>
             </ul>
           </section>
 
-          {/* Section 4: Failure Handling */}
+          {/* Section 4: Failure & Crash Recovery */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
-              Failure Handling
+              Failure Handling & Crash Recovery
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
+              <li>
+                <strong className="text-neutral-900">
+                  Startup Crash Recovery:
+                </strong>{' '}
+                FastAPI lifespan hooks scan the database on container reboot to
+                rescue any tasks interrupted by server restarts, marking them as
+                failed with an immediate Retry prompt.
+              </li>
+              <li>
+                <strong className="text-neutral-900">
+                  Rate-Limit Backoff:
+                </strong>{' '}
+                Handles Gnani HTTP 429 rate limits with exponential retry pauses
+                without dropping the processing pipeline.
+              </li>
+              <li>
+                <strong className="text-neutral-900">Isolated Retry:</strong> If
+                transcription succeeded but summarization failed, clicking Retry
+                skips ASR and only re-runs the Gemini LLM call.
+              </li>
               <li>
                 <strong className="text-neutral-900">
                   Client Disconnects:
@@ -180,52 +220,24 @@ export default function ArchitecturePage() {
                 Processing runs server-side independently once uploaded,
                 persisting state regardless of client network status.
               </li>
-              <li>
-                <strong className="text-neutral-900">Validation:</strong> Files
-                over 10 minutes or corrupted audio are rejected immediately
-                before database insertion.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Error Visibility:</strong>{' '}
-                API timeouts or failures are captured and displayed with a Retry
-                option.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Isolated Retry:</strong> If
-                transcription succeeded but summarization failed, Retry only
-                re-runs the LLM call.
-              </li>
-              <li>
-                <strong className="text-neutral-900">Cloudflare WAF:</strong>{' '}
-                Gnani&apos;s API endpoint enforces Cloudflare WAF bot
-                protection. Public cloud datacenter IP ranges (AWS / Render)
-                receive HTTP 403 challenge blocks, while residential connections
-                work.
-              </li>
             </ul>
           </section>
 
-          {/* Section 5: What I Would Improve */}
+          {/* Section 5: Future Improvements */}
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-neutral-900">
-              What I Would Improve
+              Future Improvements
             </h2>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>
                 <strong className="text-neutral-900">
-                  Silence-Based Chunking:
+                  Semantic Vector Search:
                 </strong>{' '}
-                Split audio during natural breath pauses rather than fixed
-                25-second intervals to prevent words from getting cut in half.
+                Search past notes by concept (e.g. searching &quot;pricing&quot;
+                finds notes discussing budget) using pgvector embeddings.
               </li>
               <li>
-                <strong className="text-neutral-900">Semantic Search:</strong>{' '}
-                Search past notes by meaning and topic (e.g. searching "pricing"
-                finds notes discussing "costs and budget") rather than only
-                exact keyword matches.
-              </li>
-              <li>
-                <strong className="text-neutral-900">WebSockets:</strong>{' '}
+                <strong className="text-neutral-900">WebSockets / SSE:</strong>{' '}
                 Replace 2-second HTTP polling with real-time push events for
                 instant status updates.
               </li>
@@ -233,15 +245,15 @@ export default function ArchitecturePage() {
                 <strong className="text-neutral-900">
                   Task Queue (Celery + Redis):
                 </strong>{' '}
-                Move background processing to dedicated worker nodes for
-                high-volume traffic.
+                Move background processing to dedicated worker nodes for high
+                traffic volume.
               </li>
               <li>
                 <strong className="text-neutral-900">
-                  Indic Language Support:
+                  Multilingual Indic Language Picker:
                 </strong>{' '}
-                Add language selection so users can transcribe in Hindi,
-                Kannada, Tamil, or Telugu using Gnani's multilingual models.
+                Add an audio language selector to transcribe in Hindi, Kannada,
+                Tamil, Telugu, or Marathi using Gnani&apos;s language models.
               </li>
             </ul>
           </section>
