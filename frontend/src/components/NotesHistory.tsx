@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   FileAudio,
+  Loader2,
   PanelLeftClose,
   Plus,
   RotateCw,
@@ -39,6 +40,79 @@ export default function NotesHistory({
     top: number;
     left: number;
   } | null>(null);
+
+  // Set of note IDs that have been opened / seen by the user
+  const [seenNoteIds, setSeenNoteIds] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('seen_audio_note_ids');
+        if (stored) {
+          return new Set(JSON.parse(stored));
+        }
+      } catch {}
+    }
+    return new Set();
+  });
+
+  // On first session visit, mark all existing completed notes as already seen so they don't show unread dots
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('seen_audio_note_ids');
+      if (!stored && notes.length > 0) {
+        const initialCompletedIds = notes
+          .filter((n) => n.status === 'COMPLETED')
+          .map((n) => n.id);
+        const newSet = new Set(initialCompletedIds);
+        setSeenNoteIds(newSet);
+        localStorage.setItem(
+          'seen_audio_note_ids',
+          JSON.stringify(Array.from(newSet))
+        );
+      }
+    } catch {}
+  }, [notes]);
+
+  // Mark the currently active selected note as seen
+  useEffect(() => {
+    if (!selectedNoteId) return;
+    const activeNote = notes.find(
+      (n) => n.id === selectedNoteId || (n.slug && n.slug === selectedNoteId)
+    );
+    if (activeNote && activeNote.status === 'COMPLETED') {
+      setSeenNoteIds((prev) => {
+        if (!prev.has(activeNote.id)) {
+          const next = new Set(prev);
+          next.add(activeNote.id);
+          try {
+            localStorage.setItem(
+              'seen_audio_note_ids',
+              JSON.stringify(Array.from(next))
+            );
+          } catch {}
+          return next;
+        }
+        return prev;
+      });
+    }
+  }, [selectedNoteId, notes]);
+
+  const markNoteAsSeenAndSelect = (note: AudioNote) => {
+    if (note.status === 'COMPLETED') {
+      setSeenNoteIds((prev) => {
+        const next = new Set(prev);
+        next.add(note.id);
+        try {
+          localStorage.setItem(
+            'seen_audio_note_ids',
+            JSON.stringify(Array.from(next))
+          );
+        } catch {}
+        return next;
+      });
+    }
+    onSelectNote(note);
+  };
 
   // Close popover when clicking anywhere outside or scrolling
   useEffect(() => {
@@ -143,10 +217,10 @@ export default function NotesHistory({
             return (
               <div
                 key={note.id}
-                onClick={() => onSelectNote(note)}
+                onClick={() => markNoteAsSeenAndSelect(note)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    onSelectNote(note);
+                    markNoteAsSeenAndSelect(note);
                   }
                 }}
                 role="button"
@@ -177,7 +251,45 @@ export default function NotesHistory({
                   </div>
                 </div>
 
-                <div className="shrink-0">
+                {/* Right End: Status Indicator (Loader on processing, Blue dot on unread complete, Red dot on fail) & Sliding Delete Icon on Hover */}
+                <div className="relative flex items-center justify-center w-6 h-6 shrink-0">
+                  {/* Status Indicator (visible by default, fades out smoothly on hover) */}
+                  <div
+                    className={`flex items-center justify-center transition-all duration-200 ${
+                      deleteTarget?.id === note.id
+                        ? 'opacity-0 scale-75 pointer-events-none'
+                        : 'opacity-100 group-hover:opacity-0 group-hover:scale-75'
+                    }`}
+                  >
+                    {note.status === 'FAILED' ? (
+                      <span
+                        className="inline-flex h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]"
+                        title="Processing failed — click to retry"
+                      />
+                    ) : note.status === 'COMPLETED' ? (
+                      !seenNoteIds.has(note.id) && !isSelected ? (
+                        <span
+                          className="inline-flex h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"
+                          title="New: Processing completed! Click to view."
+                        />
+                      ) : null
+                    ) : (
+                      <span
+                        title={
+                          note.status === 'PROCESSING_ASR'
+                            ? 'Transcribing audio...'
+                            : note.status === 'PROCESSING_LLM'
+                              ? 'Generating AI summary...'
+                              : 'Processing in background...'
+                        }
+                        className="flex items-center justify-center"
+                      >
+                        <Loader2 className="h-3 w-3 text-neutral-300 animate-spin" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Delete Button (slides in from right on hover) */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -193,10 +305,10 @@ export default function NotesHistory({
                         });
                       }
                     }}
-                    className={`rounded-md p-1 transition shrink-0 cursor-pointer ${
+                    className={`absolute inset-0 m-auto flex items-center justify-center rounded-md p-1 transition-all duration-200 cursor-pointer ${
                       deleteTarget?.id === note.id
-                        ? 'opacity-100 text-red-400 bg-neutral-700/70'
-                        : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-400 hover:bg-neutral-700/50'
+                        ? 'opacity-100 translate-x-0 text-red-400 bg-neutral-700/70'
+                        : 'opacity-0 translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 text-neutral-400 hover:text-red-400 hover:bg-neutral-700/50'
                     }`}
                     title="Delete Note"
                   >

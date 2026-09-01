@@ -148,6 +148,14 @@ function DashboardContent() {
       const res = await apiClient.get<AudioNote[]>('/notes');
       return res.data;
     },
+    refetchInterval: (query) => {
+      const notesList = query.state.data || [];
+      const hasActiveProcessing = notesList.some(
+        (n) => n.status && n.status !== 'COMPLETED' && n.status !== 'FAILED'
+      );
+      // Auto-poll sidebar notes every 2 seconds if ANY note is processing in background
+      return hasActiveProcessing ? 2000 : false;
+    },
   });
 
   // Query selected note details with real-time polling while processing
