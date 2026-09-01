@@ -430,10 +430,18 @@ function DashboardContent() {
                 description =
                   detail ||
                   'Too many requests. Please wait a moment before trying again.';
+              } else if (status === 502) {
+                title = 'HTTP 502 — Bad Gateway';
+                description =
+                  'The backend service is currently restarting or unavailable.';
               } else if (status === 503) {
                 title = 'HTTP 503 — Service Unavailable';
                 description =
                   detail || 'The backend service is temporarily unavailable.';
+              } else if (status === 504) {
+                title = 'HTTP 504 — Gateway Timeout';
+                description =
+                  'The server took too long to respond. It may be restarting.';
               } else if (status === 500) {
                 title = 'HTTP 500 — Internal Server Error';
                 description =

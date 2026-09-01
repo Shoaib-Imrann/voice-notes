@@ -1,10 +1,12 @@
 import os
+import gc
 import shutil
 import tempfile
 import logging
 import asyncio
 import httpx
 from pydub import AudioSegment
+from pydub.silence import split_on_silence
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -186,6 +188,11 @@ async def transcribe_audio_gnani(file_path: str) -> str:
             chunk_length_ms = 10 * 1000
             chunks = [audio[i : i + chunk_length_ms] for i in range(0, len(audio), chunk_length_ms)]
 
+        # Free raw audio and segments from memory before transcribing
+        del raw_segments
+        del audio
+        gc.collect()
+
         logger.info(f"Audio divided into {len(chunks)} silence-aligned speech chunks for Gnani STT...")
 
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -217,6 +224,15 @@ async def transcribe_audio_gnani(file_path: str) -> str:
                     if combined_sub:
                         chunk_text = combined_sub
                         logger.info(f"Sub-chunk recovery successful for segment {idx + 1}!")
+                    
+                    if os.path.exists(sub1_path):
+                        os.remove(sub1_path)
+                    if os.path.exists(sub2_path):
+                        os.remove(sub2_path)
+
+                # Delete chunk wav from disk immediately after transcription
+                if os.path.exists(chunk_path):
+                    os.remove(chunk_path)
 
                 if chunk_text:
                     logger.info(f"Segment {idx + 1}/{len(chunks)}: {chunk_text[:60]}...")
