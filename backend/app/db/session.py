@@ -3,6 +3,11 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
 db_url = settings.DATABASE_URL
+if not db_url or not db_url.strip():
+    raise RuntimeError(
+        "DATABASE_URL environment variable is required. Please set DATABASE_URL in your .env or Render environment."
+    )
+
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 

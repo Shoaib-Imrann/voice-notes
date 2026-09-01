@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Voice Notes Platform"
     API_V1_STR: str = "/api/v1"
     
-    DATABASE_URL: str = "sqlite:///./sql_app.db"
+    DATABASE_URL: str | None = None
     
     GNANI_API_KEY: str | None = None
     GNANI_STT_URL: str = "https://api.vachana.ai/stt/v3"
@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     MAX_AUDIO_DURATION_SECONDS: float = 600.0  # 10 minutes max
     ALLOWED_AUDIO_EXTENSIONS: set[str] = {".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac", ".webm"}
     
+    # Telegram Alerts (Optional)
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_CHAT_ID: str | None = None
+
     # CORS: Configurable comma-separated list of origins (no wildcard by default)
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 

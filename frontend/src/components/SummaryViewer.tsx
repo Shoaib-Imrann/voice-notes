@@ -74,7 +74,7 @@ export default function SummaryViewer({
     } catch {
       structured = { executive_summary: summary };
     }
-  } else {
+  } else if (summary) {
     structured = summary;
   }
 

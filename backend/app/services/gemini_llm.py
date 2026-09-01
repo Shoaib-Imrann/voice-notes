@@ -55,13 +55,13 @@ Return ONLY a valid JSON object with the following schema:
         for model_name in candidate_models:
             try:
                 logger.info(f"Attempting Gemini summary with model '{model_name}'...")
-                response = client.models.generate_content(
+                chat = client.chats.create(
                     model=model_name,
-                    contents=prompt,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                     ),
                 )
+                response = chat.send_message(prompt)
                 if response and response.text:
                     successful_model = model_name
                     logger.info(f"Gemini summary successfully generated using model '{model_name}'.")
@@ -91,3 +91,4 @@ Return ONLY a valid JSON object with the following schema:
     except Exception as e:
         logger.error(f"Error calling Gemini API: {e}", exc_info=True)
         raise Exception(f"Gemini API Error: {str(e)}")
+

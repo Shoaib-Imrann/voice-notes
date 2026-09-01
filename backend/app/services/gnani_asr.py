@@ -197,7 +197,7 @@ async def transcribe_audio_gnani(file_path: str) -> str:
         del audio
         gc.collect()
 
-        logger.info(f"Audio divided into {len(chunks)} silence-aligned speech chunks for Gnani STT...")
+        logger.info(f"Transcribing audio ({duration_seconds:.1f}s, {len(chunks)} speech segments via Gnani STT)...")
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             for idx, chunk in enumerate(chunks):
@@ -205,12 +205,10 @@ async def transcribe_audio_gnani(file_path: str) -> str:
                 chunk_path = os.path.join(temp_dir, chunk_filename)
                 chunk.export(chunk_path, format="wav", parameters=["-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1"])
 
-                logger.info(f"Transcribing segment {idx + 1}/{len(chunks)} ({len(chunk)/1000:.1f}s)...")
                 chunk_text = await _transcribe_single_chunk(client, chunk_path)
 
                 # Sub-chunk fallback: if segment returned empty, split in half (shorter context)
                 if not chunk_text and len(chunk) > 6000:
-                    logger.warning(f"Segment {idx + 1}/{len(chunks)} returned empty. Retrying with half-segments...")
                     half_len = len(chunk) // 2
                     sub1 = chunk[:half_len]
                     sub2 = chunk[half_len:]
@@ -227,7 +225,6 @@ async def transcribe_audio_gnani(file_path: str) -> str:
                     combined_sub = f"{t1} {t2}".strip()
                     if combined_sub:
                         chunk_text = combined_sub
-                        logger.info(f"Sub-chunk recovery successful for segment {idx + 1}!")
                     
                     if os.path.exists(sub1_path):
                         os.remove(sub1_path)
@@ -239,10 +236,7 @@ async def transcribe_audio_gnani(file_path: str) -> str:
                     os.remove(chunk_path)
 
                 if chunk_text:
-                    logger.info(f"Segment {idx + 1}/{len(chunks)}: {chunk_text[:60]}...")
                     transcripts.append(chunk_text)
-                else:
-                    logger.warning(f"Segment {idx + 1}/{len(chunks)} produced no speech text (silence).")
 
                 # Rate-limit safety pause
                 if idx < len(chunks) - 1:
@@ -251,7 +245,8 @@ async def transcribe_audio_gnani(file_path: str) -> str:
         full_transcript = " ".join(transcripts).strip()
         if not full_transcript:
             raise ValueError("Gnani STT returned empty transcript output across all audio segments.")
-        
+
+        logger.info(f"Transcription completed ({len(transcripts)}/{len(chunks)} speech segments transcribed).")
         return full_transcript
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)

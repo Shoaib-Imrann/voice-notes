@@ -171,8 +171,19 @@ async def upload_audio_note(
     db.commit()
     db.refresh(new_note)
 
-    # 4. Trigger Async Processing Pipeline
+    # 4. Trigger Async Processing Pipeline & Telegram Alert
     background_tasks.add_task(process_audio_note_task, new_note.id)
+
+    try:
+        from app.services.notifier import notify_new_upload
+        notify_new_upload(
+            title=new_note.title,
+            duration_sec=new_note.duration_seconds or 0.0,
+            size_bytes=new_note.file_size_bytes or 0,
+            filename=file.filename or safe_filename,
+        )
+    except Exception as notify_err:
+        logger.warning(f"Could not dispatch upload notification: {notify_err}")
 
     return format_note_response(new_note)
 
@@ -182,20 +193,26 @@ async def retry_audio_note(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    note = get_note_by_identifier(db, note_id)
+    note = db.query(AudioNote).filter(AudioNote.id == note_id).first()
     if not note:
-        raise HTTPException(status_code=404, detail="Audio note not found")
-
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Note not found"
+        )
+        
+    note.status = "UPLOADED"
     note.error_message = None
-    if note.transcript and note.transcript.strip():
-        note.status = "PROCESSING_LLM"
-    else:
-        note.status = "UPLOADED"
-
     db.commit()
     db.refresh(note)
-
+    
     background_tasks.add_task(process_audio_note_task, note.id)
+
+    try:
+        from app.services.notifier import send_telegram_message
+        send_telegram_message(f"🔄 <b>Note Retry Triggered</b>\n\n📌 <b>Title:</b> <code>{note.title}</code>\n⚙️ <i>Reprocessing...</i>\n")
+    except Exception:
+        pass
+    
     return format_note_response(note)
 
 @router.get("/notes", response_model=List[AudioNoteResponse])

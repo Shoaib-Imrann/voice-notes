@@ -80,6 +80,11 @@ def process_audio_note_task(note_id: str):
                     note.status = "FAILED"
                     note.error_message = f"Transcription failure: {str(e)}"
                     db.commit()
+                    try:
+                        from app.services.notifier import notify_processing_failed
+                        notify_processing_failed(note.title, note.error_message)
+                    except Exception:
+                        pass
                 return
 
         # 3. LLM Summarization via Gemini
@@ -96,6 +101,17 @@ def process_audio_note_task(note_id: str):
             db.commit()
             logger.info(f"Note {note_id} processing completed successfully.")
 
+            try:
+                from app.services.notifier import notify_processing_completed
+                exec_summary = summary_dict.get("executive_summary", "") if isinstance(summary_dict, dict) else str(summary_dict)
+                notify_processing_completed(
+                    title=note.title,
+                    summary_preview=exec_summary or transcript[:200],
+                    duration_sec=note.duration_seconds or 0.0
+                )
+            except Exception as notify_err:
+                logger.warning(f"Could not dispatch completion alert: {notify_err}")
+
         except Exception as e:
             logger.error(f"Summarization failed for note {note_id}: {e}")
             db.rollback()
@@ -104,6 +120,11 @@ def process_audio_note_task(note_id: str):
                 note.status = "FAILED"
                 note.error_message = f"Summarization failure: {str(e)}"
                 db.commit()
+                try:
+                    from app.services.notifier import notify_processing_failed
+                    notify_processing_failed(note.title, note.error_message)
+                except Exception:
+                    pass
 
     except Exception as outer_e:
         logger.error(f"Unexpected worker failure for note {note_id}: {outer_e}")

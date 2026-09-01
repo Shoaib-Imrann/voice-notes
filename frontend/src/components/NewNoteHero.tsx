@@ -25,7 +25,34 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [healthStatus, setHealthStatus] = useState<{
+    gnani: boolean | null;
+    gemini: boolean | null;
+  }>({ gnani: null, gemini: null });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check live health status of STT and Gemini services
+  useEffect(() => {
+    let isMounted = true;
+    apiClient
+      .get('/health')
+      .then((res) => {
+        if (isMounted && res.data?.services) {
+          setHealthStatus({
+            gnani: Boolean(res.data.services.gnani?.connected),
+            gemini: Boolean(res.data.services.gemini?.connected),
+          });
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setHealthStatus({ gnani: false, gemini: false });
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Global Enter key trigger to process staged audio immediately
   useEffect(() => {
@@ -178,15 +205,54 @@ export default function NewNoteHero({ onUploadSuccess }: Props) {
             Transcribe & Summarize
           </h1>
 
-          {/* Minimal Feature Badges */}
+          {/* Dynamic Service Status Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
-              <Mic className="h-3.5 w-3.5 text-neutral-500" />
-              Gnani Speech-to-Text
+            {/* Gnani STT Status */}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-medium shadow-2xs cursor-default select-none ${
+                healthStatus.gnani === true
+                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-800'
+                  : healthStatus.gnani === false
+                    ? 'border-red-200 bg-red-50/70 text-red-700'
+                    : 'border-neutral-200 bg-neutral-100 text-neutral-700'
+              }`}
+            >
+              <Mic
+                className={`h-3.5 w-3.5 ${
+                  healthStatus.gnani === true
+                    ? 'text-emerald-600'
+                    : healthStatus.gnani === false
+                      ? 'text-red-500'
+                      : 'text-neutral-400 animate-pulse'
+                }`}
+              />
+              {healthStatus.gnani === false
+                ? 'Gnani Offline'
+                : 'Gnani Speech-to-Text'}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-700 shadow-2xs">
-              <Bot className="h-3.5 w-3.5 text-neutral-500" />
-              Gemini AI Summary
+
+            {/* Gemini AI Status */}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-medium shadow-2xs cursor-default select-none ${
+                healthStatus.gemini === true
+                  ? 'border-emerald-200 bg-emerald-50/70 text-emerald-800'
+                  : healthStatus.gemini === false
+                    ? 'border-red-200 bg-red-50/70 text-red-700'
+                    : 'border-neutral-200 bg-neutral-100 text-neutral-700'
+              }`}
+            >
+              <Bot
+                className={`h-3.5 w-3.5 ${
+                  healthStatus.gemini === true
+                    ? 'text-emerald-600'
+                    : healthStatus.gemini === false
+                      ? 'text-red-500'
+                      : 'text-neutral-400 animate-pulse'
+                }`}
+              />
+              {healthStatus.gemini === false
+                ? 'Gemini Offline'
+                : 'Gemini AI Summary'}
             </span>
           </div>
         </div>

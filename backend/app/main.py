@@ -10,6 +10,14 @@ from app.api.v1.router import api_router
 from app.db.session import engine, Base, SessionLocal
 from app.models.note import AudioNote
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:     %(message)s"
+)
+# Silence 3rd party HTTP client loggers to prevent printing secret request URLs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Auto-create database tables (Alembic can manage migrations for production)
@@ -32,6 +40,35 @@ async def lifespan(app: FastAPI):
                     item.status = "FAILED"
                     item.error_message = "Server restarted during processing. Click Retry to reprocess."
                 db.commit()
+
+            # Direct stdout startup banner
+            is_postgres = str(engine.url).startswith("postgresql") or str(engine.url).startswith("postgres")
+            db_icon = "✅"
+            db_label = "PostgreSQL" if is_postgres else "SQLite (Local)"
+
+            audio_icon = "✅"
+            audio_label = "Supabase" if settings.SUPABASE_URL else "Local Disk"
+
+            gnani_icon = "✅" if settings.GNANI_API_KEY else "❌"
+            gnani_label = "Gnani" if settings.GNANI_API_KEY else "Missing Key"
+
+            gemini_icon = "✅" if settings.GEMINI_API_KEY else "❌"
+            gemini_label = "Gemini" if settings.GEMINI_API_KEY else "Missing Key"
+
+            print("\n" + "=" * 44)
+            print(f"  {settings.PROJECT_NAME} Backend")
+            print("=" * 44)
+            print(f"  {db_icon} Database    : {db_label}")
+            print(f"  {audio_icon} Audio Files : {audio_label}")
+            print(f"  {gnani_icon} Speech STT  : {gnani_label}")
+            print(f"  {gemini_icon} AI Summary  : {gemini_label}")
+            print("=" * 44 + "\n", flush=True)
+
+            try:
+                from app.services.notifier import notify_server_reboot
+                notify_server_reboot(rescued_count=len(interrupted_notes) if interrupted_notes else 0)
+            except Exception as notify_err:
+                logger.warning(f"Could not dispatch reboot notification: {notify_err}")
         finally:
             db.close()
     except Exception as startup_err:
