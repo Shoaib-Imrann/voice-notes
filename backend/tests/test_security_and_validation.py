@@ -105,3 +105,39 @@ def test_valid_request_workflow(client, monkeypatch):
     # 6. Verify 404 after deletion
     not_found_res = client.get(f"/api/v1/notes/{note_id}")
     assert not_found_res.status_code == 404
+
+
+def test_ip_rate_limiting(client, monkeypatch):
+    """Verify that IP rate limiting blocks requests exceeding the threshold."""
+    monkeypatch.setattr(settings, "GNANI_API_KEY", "mock_key")
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "mock_key")
+    monkeypatch.setattr(settings, "RATE_LIMIT_UPLOADS_PER_HOUR", 2)
+    monkeypatch.setattr("app.services.audio.get_audio_duration_and_validate", lambda path: 10.0)
+
+    from app.core.rate_limit import _upload_history
+    _upload_history.clear()
+
+    # Request 1: OK
+    res1 = client.post(
+        "/api/v1/notes/upload",
+        files={"file": ("test1.mp3", b"ID3\x03\x00\x00\x00\x00\x00\x00", "audio/mpeg")},
+        data={"title": "Upload 1"}
+    )
+    assert res1.status_code == 201
+
+    # Request 2: OK
+    res2 = client.post(
+        "/api/v1/notes/upload",
+        files={"file": ("test2.mp3", b"ID3\x03\x00\x00\x00\x00\x00\x00", "audio/mpeg")},
+        data={"title": "Upload 2"}
+    )
+    assert res2.status_code == 201
+
+    # Request 3: Exceeds rate limit -> 429
+    res3 = client.post(
+        "/api/v1/notes/upload",
+        files={"file": ("test3.mp3", b"ID3\x03\x00\x00\x00\x00\x00\x00", "audio/mpeg")},
+        data={"title": "Upload 3"}
+    )
+    assert res3.status_code == 429
+    assert "rate limit reached" in res3.json()["detail"].lower()
